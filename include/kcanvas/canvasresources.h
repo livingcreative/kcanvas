@@ -122,22 +122,27 @@ namespace k_canvas
         */
         struct PenData
         {
-            kColor           p_color;  // pen color // TODO: replace with brush
             kScalar          p_width;  // pen width
+            kResourceObject *p_brush;  // reference to brush resource object
             kResourceObject *p_stroke; // reference to stroke resource object
 
             bool operator<(const PenData &other) const
             {
-                if (p_color == other.p_color) {
-                    return p_width < other.p_width;
+                if (p_brush == other.p_brush) {
+                    if (p_stroke == other.p_stroke) {
+                        return p_width < other.p_width;
+                    } else {
+                        return p_stroke < other.p_stroke;
+                    }
                 } else {
-                    return p_color < other.p_color;
+                    return p_brush < other.p_brush;
                 }
             }
 
             bool operator==(const PenData &other) const
             {
-                return p_color == other.p_color && p_width == other.p_width;
+                return p_brush == other.p_brush && p_stroke == other.p_stroke &&
+                       p_width == other.p_width;
             }
         };
 

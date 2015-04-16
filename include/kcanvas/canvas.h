@@ -297,7 +297,7 @@ namespace k_canvas
                 specified point
 
             BezierTo(kPoint p1, kPoint p2, kPoint p3)
-                adds quadratic bezier line to current figure
+                adds qubic bezier line to current figure
                 p1 is first control point
                 p2 is second control point
                 p3 is line end point
