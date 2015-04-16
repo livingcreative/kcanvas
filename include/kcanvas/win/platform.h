@@ -20,7 +20,7 @@ namespace k_canvas
     enum Impl
     {
         IMPL_NONE,
-        IMPL_D2D
+        IMPL_D2D   // Direct2D implementation
     };
 
     typedef void *kContext;

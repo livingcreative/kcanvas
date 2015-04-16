@@ -13,20 +13,23 @@
 */
 
 #pragma once
-#include "kcommon/c_util.h"
-#include "canvasplatform.h"
+#include "kcommon/c_util.h" // common utility funcs and types
+#include "canvasplatform.h" // implementation platform support
 #include <cstdint>
 
 
 namespace k_canvas
 {
     // base scalar type (float is default)
-    typedef float Scalar;
+    typedef float kScalar;
 
     // basic types derived from c_util types
-    typedef c_util::pointT<Scalar> kPoint;
-    typedef c_util::sizeT<Scalar> kSize;
-    typedef c_util::rectT<Scalar> kRect;
+    //      these types could be replaced with any compatible types
+    //      you like (you might want to use your preffered lib for these types)
+    //      see documentation for proper types replacement
+    typedef c_util::pointT<kScalar> kPoint;
+    typedef c_util::sizeT<kScalar> kSize;
+    typedef c_util::rectT<kScalar> kRect;
     typedef c_util::rectT<int> kRectInt;
 
     // extend mode
@@ -48,6 +51,7 @@ namespace k_canvas
         Custom     = 6
     };
 
+    // line cap styles
     enum class kCapStyle
     {
         Flat   = 0,
@@ -55,6 +59,7 @@ namespace k_canvas
         Round  = 2
     };
 
+    // line join styles
     enum class kLineJoin
     {
         Miter = 0,
@@ -93,7 +98,7 @@ namespace k_canvas
         uint32_t p_value;
     };
 
-    // kBitmap formats
+    // kBitmap data formats
     enum class kBitmapFormat
     {
         Color32BitAlphaPremultiplied = 1,
@@ -101,6 +106,7 @@ namespace k_canvas
     };
 
     // kColor
+    //      basic color struct used in canvas API
     struct kColor
     {
         uint8_t r, g, b, a;
@@ -114,9 +120,13 @@ namespace k_canvas
         inline bool operator!=(const kColor color) const;
         inline bool operator<(const kColor color) const;
 
+        // make kColor object from HSL values
+        //      in integer ranges (0 - 360 for hue and 0 - 100 for saturation and lightness )
         static inline kColor fromHSL(int hue, int saturation, int lightness);
-        static inline kColor fromHSL(Scalar hue, Scalar saturation, Scalar lightness);
+        //      in float ranges (all values from 0 to 1)
+        static kColor fromHSL(kScalar hue, kScalar saturation, kScalar lightness);
 
+        // predefined colors constant values
         static const kColor Black;
         static const kColor Gray;
         static const kColor LtGray;
@@ -125,11 +135,11 @@ namespace k_canvas
 
     // kColorReal
     //     Primary type for passing colors to canvas API is kColor
-    //     if you need to use floating point color kColorReal is a handy way to
+    //     if you need to use floating point color, kColorReal is a handy way to
     //     implicitly convert between fp and fixed color
     struct kColorReal
     {
-        Scalar r, g, b, a;
+        kScalar r, g, b, a;
 
         inline kColorReal();
         inline kColorReal(const kColor color);
@@ -138,12 +148,14 @@ namespace k_canvas
         inline operator kColor() const;
     };
 
+    // kGradientStop
+    //      defines gradient color at certain stop point
     struct kGradientStop
     {
         kColor color;
-        Scalar position;
+        kScalar position;
 
-        kGradientStop(const kColor _color, Scalar _position) :
+        kGradientStop(const kColor _color, kScalar _position) :
             color(_color),
             position(_position)
         {}
@@ -160,7 +172,7 @@ namespace k_canvas
 
 
 
-    // IMPLEMENTATION
+    // Implementation for inline funcs
 
     kColor::kColor() :
         r(0), g(0), b(0), a(255)
@@ -196,56 +208,14 @@ namespace k_canvas
     kColor kColor::fromHSL(int hue, int saturation, int lightness)
     {
         return fromHSL(
-            Scalar(hue) / Scalar(360),
-            Scalar(saturation) / Scalar(100),
-            Scalar(lightness) / Scalar(100)
-        );
-    }
-
-    kColor kColor::fromHSL(Scalar hue, Scalar saturation, Scalar lightness)
-    {
-        const Scalar one_third = Scalar(1.0 / 3.0);
-        const Scalar two_thirds = Scalar(2.0 / 3.0);
-        const Scalar one_sixth = Scalar(1.0 / 6.0);
-
-        Scalar q = lightness < Scalar(0.5) ?
-                   lightness * (Scalar(1.0) + saturation) :
-                   lightness + saturation - lightness * saturation;
-        Scalar p = Scalar(2.0) * lightness - q;
-
-        float t[3] = {hue + one_third, hue, hue - one_third};
-        for (int n = 0; n < 3; n++) {
-            if (t[n] < Scalar(0)) {
-                t[n] += Scalar(1);
-            }
-            if (t[n] > Scalar(1)) {
-                t[n] -= Scalar(1);
-            }
-        }
-
-        float rgb[3];
-        for (int n = 0; n < 3; n++) {
-            if (t[n] < one_sixth) {
-                rgb[n] = p + (q - p) * Scalar(6.0) * t[n];
-            } else if (t[n] < Scalar(0.5)) {
-                rgb[n] = q;
-            } else if (t[n] < two_thirds) {
-                rgb[n] = p + (q - p) * (two_thirds - t[n]) * Scalar(6.0);
-            } else {
-                rgb[n] = p;
-            }
-        }
-
-        return kColor(
-            c_util::roundint(rgb[0] * 255.0f),
-            c_util::roundint(rgb[1] * 255.0f),
-            c_util::roundint(rgb[2] * 255.0f)
+            kScalar(hue) / kScalar(360),
+            kScalar(saturation) / kScalar(100),
+            kScalar(lightness) / kScalar(100)
         );
     }
 
 
-
-    #define FCS Scalar(1.0 / 255.0)
+    #define FCS kScalar(1.0 / 255.0)
 
     kColorReal::kColorReal() :
         r(0), g(0), b(0), a(1)
@@ -258,7 +228,7 @@ namespace k_canvas
         a(color.a * FCS)
     {}
 
-    kColorReal::kColorReal(Scalar _r, Scalar _g, Scalar _b, Scalar _a) :
+    kColorReal::kColorReal(kScalar _r, kScalar _g, kScalar _b, kScalar _a) :
         r(_r), g(_g), b(_b), a(_a)
     {}
 

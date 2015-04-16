@@ -20,7 +20,7 @@
 
 namespace k_canvas
 {
-    // Forward kCanvas declaration
+    // Forward kCanvas objects declarations
     class kPen;
     class kCanvas;
 
@@ -94,23 +94,37 @@ namespace k_canvas
             mutable void            *p_native[MAX_NATIVE_RESOURCES]; // native resource pointer copy
         };
 
+
+        /*
+         -------------------------------------------------------------------------------
+         StrokeData
+         -------------------------------------------------------------------------------
+            stroke resource object properties data structure
+        */
         struct StrokeData
         {
             kStrokeStyle p_style;
             kCapStyle    p_startcap;
             kCapStyle    p_endcap;
             kCapStyle    p_dashcap;
-            Scalar       p_dashoffset;
+            kScalar      p_dashoffset;
             kLineJoin    p_join;
-            Scalar       p_stroke[16];
+            kScalar      p_stroke[16];
             size_t       p_count;
         };
 
+
+        /*
+         -------------------------------------------------------------------------------
+         PenData
+         -------------------------------------------------------------------------------
+            pen resource object properties data structure
+        */
         struct PenData
         {
-            kColor           p_color;
-            Scalar           p_width;
-            kResourceObject *p_stroke;
+            kColor           p_color;  // pen color // TODO: replace with brush
+            kScalar          p_width;  // pen width
+            kResourceObject *p_stroke; // reference to stroke resource object
 
             bool operator<(const PenData &other) const
             {
@@ -127,6 +141,13 @@ namespace k_canvas
             }
         };
 
+
+        /*
+         -------------------------------------------------------------------------------
+         BrushData
+         -------------------------------------------------------------------------------
+            brush resource object properties data structure
+        */
         struct BrushData
         {
             kBrushStyle    p_style;
@@ -136,8 +157,8 @@ namespace k_canvas
             kSize          p_radius;
             kExtendType    p_xextend;
             kExtendType    p_yextend;
-            kGradientImpl *p_gradient;
-            kBitmapImpl   *p_bitmap;
+            kGradientImpl *p_gradient; // rference to gradient resource object
+            kBitmapImpl   *p_bitmap;   // rference to bitmap resource object
 
             bool operator<(const BrushData &other) const
             {
@@ -154,11 +175,18 @@ namespace k_canvas
             }
         };
 
+
+        /*
+         -------------------------------------------------------------------------------
+         FontData
+         -------------------------------------------------------------------------------
+            font resource object properties data structure
+        */
         struct FontData
         {
             char       p_facename[32]; // == LF_FACESIZE
             kFontStyle p_style;
-            float      p_size;
+            kScalar    p_size;
 
             bool operator<(const FontData &other) const
             {
@@ -180,6 +208,7 @@ namespace k_canvas
         };
 
 
+        // typedefs for base resource object classes
         typedef kSharedResourceBase<StrokeData> kStrokeBase;
         typedef kSharedResourceBase<PenData> kPenBase;
         typedef kSharedResourceBase<BrushData> kBrushBase;
