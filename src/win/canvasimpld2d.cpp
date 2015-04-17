@@ -359,13 +359,14 @@ bool kCanvasImplD2D::Unbind()
 }
 
 
-#define pen_not_empty pen //&& penData(pen).p_style != kPenStyle::Clear
-#define brush_not_empty brush && brushData(brush).p_style != kBrushStyle::Clear
+#define pen_not_empty pen //&& resourceData<PenData>(pen).p_style != kPenStyle::Clear
+#define brush_not_empty brush && resourceData<BrushData>(brush).p_style != kBrushStyle::Clear
 
-#define _pen reinterpret_cast<ID2D1Brush*>(native(pen)[kD2DPen::RESOURCE_BRUSH]), penData(pen).p_width, reinterpret_cast<ID2D1StrokeStyle*>(native(pen)[kD2DPen::RESOURCE_STYLE])
-#define _pen_width penData(pen).p_width
+#define _pen reinterpret_cast<ID2D1Brush*>(native(pen)[kD2DPen::RESOURCE_BRUSH]), resourceData<PenData>(pen).p_width, reinterpret_cast<ID2D1StrokeStyle*>(native(pen)[kD2DPen::RESOURCE_STYLE])
+#define _pen_width resourceData<PenData>(pen).p_width
 #define _brush reinterpret_cast<ID2D1Brush*>(native(brush)[kD2DBrush::RESOURCE_BRUSH])
-#define _font_format (reinterpret_cast<kD2DFont*>(font.resource))->getTextFormat()
+#define _font_format reinterpret_cast<IDWriteTextFormat*>(native(font)[kD2DFont::RESOURCE_TEXTFORMAT])
+
 
 void kCanvasImplD2D::Line(const kPoint &a, const kPoint &b, const kPenBase *pen)
 {
@@ -512,15 +513,13 @@ kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *fon
 
 void kCanvasImplD2D::TextOut(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush)
 {
-    /*
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
     wstring t = convert.from_bytes(text);
 
     P_RT->DrawTextW(
-        t.c_str(), t.length(), _font_format,
+        t.c_str(), count == -1 ? t.length() : count, _font_format,
         D2D1::RectF(p.x, p.y, p.x + 9999, p.y + 9999), _brush
     );
-    */
 }
 
 ID2D1PathGeometry* kCanvasImplD2D::GeomteryFromPoints(const kPoint *points, size_t count, bool closed)

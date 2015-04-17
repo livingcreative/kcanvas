@@ -195,6 +195,29 @@ kBrush::~kBrush()
 }
 
 
+/*
+ -------------------------------------------------------------------------------
+ kFont object implementation
+ -------------------------------------------------------------------------------
+*/
+
+kFont::kFont()
+{
+    // TODO: implement default font
+}
+
+kFont::kFont(const char *facename, kScalar size, uint32_t style)
+{
+    strncpy(p_data.p_facename, facename, 32);
+    p_data.p_facename[31] = 0;
+    p_data.p_size = size;
+    p_data.p_style = style;
+}
+
+kFont::~kFont()
+{}
+
+
 // helper routine for converting arc to set of bezier segments
 
 static const size_t MAX_ARC_POINTS = 16;
@@ -494,6 +517,15 @@ kSize kCanvas::TextSize(const char *text, int count, const kFont *font, const kS
 
 void kCanvas::TextOut(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush)
 {
+    if (brush && font) {
+        if (brush) {
+            brush->needResource();
+        }
+        if (font) {
+            font->needResource();
+        }
+        p_impl->TextOut(p, text, count, font, brush);
+    }
 }
 
 void kCanvas::TextOut(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties)
