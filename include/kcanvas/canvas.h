@@ -86,13 +86,13 @@ namespace k_canvas
         how stroke painting operation should be done
 
         these properties are:
-            kStroke   style      line style
-            kLineJoin join       how multiples lines are connected
-            kCapStyle startcap   style of start line cap
-            kCapStyle endcap     style of end line cap
-            kCapStyle dashcap    style of caps between line dashes (for non solid styles)
-            kkScalar   dashoffset offset of dash pattern along line
-            kkScalar   strokes[]  array for custom dash pattern definition
+            kStroke   style      - line style
+            kLineJoin join       - how multiples lines are connected
+            kCapStyle startcap   - style of start line cap
+            kCapStyle endcap     - style of end line cap
+            kCapStyle dashcap    - style of caps between line dashes (for non solid styles)
+            kScalar   dashoffset - offset of dash pattern along line
+            kScalar   strokes[]  - array for custom dash pattern definition
 
         Strokes array passed to constructor is copied inside object and can be
         safely deleted after object construction
@@ -130,8 +130,8 @@ namespace k_canvas
         gradient object defines colors for gradient and other properties
 
         properties of gradient object:
-            kExtendType   extend  defines how gradient is extended outside of its bounds
-            kGradientStop stops[] array of gradient stops
+            kExtendType   extend  - defines how gradient is extended outside of its bounds
+            kGradientStop stops[] - array of gradient stops
 
         kGradientStop structure defines single gradient color at certain position
         positions should be in range from 0 to 1
@@ -171,9 +171,9 @@ namespace k_canvas
         construction.
 
         pen properties are:
-            kScalar  width  defines line width for stroke operation
-            kStroke stroke reference to kStroke object which defines stroke style
-            kBrush  brush  reference to kBrush object which defines stroke fill
+            kScalar width  - defines line width for stroke operation
+            kStroke stroke - reference to kStroke object which defines stroke style
+            kBrush  brush  - reference to kBrush object which defines stroke fill
     */
     class kPen : public impl::kPenBase
     {
@@ -256,7 +256,7 @@ namespace k_canvas
         these properties are:
             char     facename[] - name of the font
                 implementation might use system's font mapper
-            kScalar   size       - font size int points (1/72 inch)
+            kScalar  size       - font size int points (1/72 inch)
             uint32_t style      - combination of kFontStyle flags
     */
     class kFont : public impl::kFontBase
