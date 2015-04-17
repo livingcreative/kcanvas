@@ -19,29 +19,6 @@ using namespace k_canvas;
 using namespace impl;
 
 
-template<> kResourceObject* kSharedResourceBase<StrokeData>::createResource() const
-{
-    kResourceObject *result = CanvasFactory::GetStrokeResource(p_data);
-    result->setupNativeResources(p_native);
-    return result;
-}
-
-template<> kResourceObject* kSharedResourceBase<PenData>::createResource() const
-{
-    kResourceObject *result = CanvasFactory::GetPenResource(p_data);
-    result->setupNativeResources(p_native);
-    return result;
-}
-
-template<> kResourceObject* kSharedResourceBase<BrushData>::createResource() const
-{
-    kResourceObject *result = CanvasFactory::GetBrushResource(p_data);
-    result->setupNativeResources(p_native);
-    return result;
-}
-
-
-
 /*
  -------------------------------------------------------------------------------
  kPathImplDefault implementation
@@ -52,7 +29,9 @@ kPathImplDefault::kPathImplDefault() :
     p_commands(),
     p_curr_command(0),
     p_points(),
-    p_curr_point(0)
+    p_curr_point(0),
+    p_text(),
+    p_curr_text(0)
 {}
 
 kPathImplDefault::~kPathImplDefault()
@@ -214,26 +193,6 @@ kBitmapImpl* CanvasFactory::CreateBitmap()
 kCanvasImpl* CanvasFactory::CreateCanvas()
 {
     return getFactory()->CreateCanvasImpl();
-}
-
-kResourceObject* CanvasFactory::GetStrokeResource(const StrokeData &data)
-{
-    return getFactory()->getStrokeResource(data);
-}
-
-kResourceObject* CanvasFactory::GetPenResource(const PenData &data)
-{
-    return getFactory()->getPenResource(data);
-}
-
-kResourceObject* CanvasFactory::GetBrushResource(const BrushData &data)
-{
-    return getFactory()->getBrushResource(data);
-}
-
-kResourceObject* CanvasFactory::GetFontResource(const FontData &data)
-{
-    return getFactory()->getFontResource(data);
 }
 
 CanvasFactory* CanvasFactory::getFactory()

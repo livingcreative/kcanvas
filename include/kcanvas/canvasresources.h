@@ -62,7 +62,12 @@ namespace k_canvas
             // createResource implementation should fill in all needed
             // native resources, so underlying implementation could quickly
             // access them
-            kResourceObject* createResource() const;
+            kResourceObject* createResource() const
+            {
+                kResourceObject *result = CanvasFactory::GetResource(p_data);
+                result->setupNativeResources(p_native);
+                return result;
+            }
 
             // use need resource to ensure that implementation resource
             // object is created and ready to use

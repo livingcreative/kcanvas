@@ -230,10 +230,15 @@ namespace k_canvas
             virtual void TextOut(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush) = 0;
 
         protected:
-            static inline const PenData& penData(const kPenBase *pen) { return pen->data(); }
-            static inline const BrushData& brushData(const kBrushBase *brush) { return brush->data(); } 
-            static inline const FontData& fontData(const kFontBase *font) { return font->data(); }
-            template<typename T>
+            // access to resource data
+            template <typename T, typename R>
+            static inline const T& resourceData(const R *resource)
+            {
+                return resource->data();
+            }
+
+            // access to resource native pointers
+            template <typename T>
             static inline void** native(const T *resource)
             {
                 return resource->native();
@@ -258,14 +263,11 @@ namespace k_canvas
             static kBitmapImpl* CreateBitmap();
             static kCanvasImpl* CreateCanvas();
 
-            static kResourceObject* GetStrokeResource(const StrokeData &data);
-            static kResourceObject* GetPenResource(const PenData &data);
-            static kResourceObject* GetBrushResource(const BrushData &data);
-            static kResourceObject* GetFontResource(const FontData &data);
-            static void ReleaseStrokeResource(void *resource);
-            static void ReleasePenResource(void *resource);
-            static void ReleaseBrushResource(void *resource);
-            static void ReleaseFontResource(void *resource);
+            template <typename T>
+            static kResourceObject* GetResource(const T &data)
+            {
+                return getFactory()->getResource(data);
+            }
 
             static void destroyFactory();
 
@@ -277,13 +279,11 @@ namespace k_canvas
             virtual kBitmapImpl* CreateBitmapImpl() = 0;
             virtual kCanvasImpl* CreateCanvasImpl() = 0;
 
-            virtual kResourceObject* getStrokeResource(const StrokeData &data) = 0;
-            virtual kResourceObject* getPenResource(const PenData &data) = 0;
-            virtual kResourceObject* getBrushResource(const BrushData &data) = 0;
-            virtual kResourceObject* getFontResource(const FontData &data) = 0;
-            virtual void releasePenResource(void *resource) = 0;
-            virtual void releaseBrushResource(void *resource) = 0;
-            virtual void releaseFontResource(void *resource) = 0;
+            virtual kResourceObject* getResource(const StrokeData &data) = 0;
+            virtual kResourceObject* getResource(const PenData &data) = 0;
+            virtual kResourceObject* getResource(const BrushData &data) = 0;
+            virtual kResourceObject* getResource(const FontData &data) = 0;
+
             virtual void destroyResources() = 0;
 
         protected:
@@ -433,12 +433,11 @@ namespace k_canvas
 
         #define FACTORY_RESOURCE_MANAGER(name, allocator, res) \
         public:\
-            virtual kResourceObject* get##name##Resource(const name##Data &data)\
+            kResourceObject* getResource(const name##Data &data) override\
             {\
                 /*return (void*)name##_manager.getResource(data);*/\
                 return allocator::createResource(data);\
             }\
-            virtual void release##name##Resource(void* resource) {name##_manager.releaseResource(res(resource));}\
         private:\
             ResourceManager<name##Data, allocator, res> name##_manager;
 
