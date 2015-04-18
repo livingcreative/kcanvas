@@ -100,6 +100,7 @@ kGradient::~kGradient()
 kPen::kPen()
 {
     p_data.p_stroke = nullptr;
+    p_data.p_brush = nullptr;
 }
 
 kPen::kPen(const kColor &color, kScalar width, kStrokeStyle style, const kScalar *strokes, size_t count)
@@ -510,12 +511,22 @@ void kCanvas::DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kSiz
     p_impl->DrawBitmap(bitmap->p_impl, origin, destsize, source, sourcesize, sourcealpha);
 }
 
-kSize kCanvas::TextSize(const char *text, int count, const kFont *font, const kSize *bounds, const kTextSizeProperties *properties)
+void kCanvas::GetFontMetrics(const kFont *font, kFontMetrics *metrics)
 {
-    return kSize();
+    p_impl->GetFontMetrics(font, metrics);
 }
 
-void kCanvas::TextOut(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush)
+void kCanvas::GetGlyphMetrics(const kFont *font, size_t first, size_t last, kGlyphMetrics *metrics)
+{
+    p_impl->GetGlyphMetrics(font, first, last, metrics);
+}
+
+kSize kCanvas::TextSize(const char *text, int count, const kFont *font, kSize *bounds, const kTextSizeProperties *properties)
+{
+    return p_impl->TextSize(text, count, font, bounds);
+}
+
+void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush)
 {
     if (brush && font) {
         if (brush) {
@@ -524,11 +535,11 @@ void kCanvas::TextOut(const kPoint &p, const char *text, int count, const kFont 
         if (font) {
             font->needResource();
         }
-        p_impl->TextOut(p, text, count, font, brush);
+        p_impl->Text(p, text, count, font, brush);
     }
 }
 
-void kCanvas::TextOut(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties)
+void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties)
 {
 }
 

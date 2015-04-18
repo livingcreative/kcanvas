@@ -460,6 +460,14 @@ namespace k_canvas
     class kCanvas
     {
     public:
+        // Default canvas instantiation doesn't allow drawing
+        // operations. Default canvas object can be used only for several
+        // non-drawing operations (such text measurement)
+        // For drawing operations to take effect one should instantiate specific
+        // canvas object (kBitmapCanvas, kContextCanvas, kPrinterCanvas)
+        kCanvas();
+        ~kCanvas();
+
         // quick draw calls of certain primitive types for non-closed outlines
         void Line(const kPoint &a, const kPoint &b, const kPen *pen);
         void Bezier(const kPoint &p1, const kPoint &p2, const kPoint &p3, const kPoint &p4, const kPen *pen);
@@ -481,9 +489,11 @@ namespace k_canvas
         void DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha = 1.0f);
 
         // simple text measuring and drawing 
-        kSize TextSize(const char *text, int count, const kFont *font, const kSize *bounds = nullptr, const kTextSizeProperties *properties = nullptr);
-        void TextOut(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush);
-        void TextOut(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties = nullptr);
+        void GetFontMetrics(const kFont *font, kFontMetrics *metrics);
+        void GetGlyphMetrics(const kFont *font, size_t first, size_t last, kGlyphMetrics *metrics);
+        kSize TextSize(const char *text, int count, const kFont *font, kSize *bounds = nullptr, const kTextSizeProperties *properties = nullptr);
+        void Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush);
+        void Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties = nullptr);
 
         // masking
 
@@ -494,12 +504,6 @@ namespace k_canvas
         static bool Shutdown();
 
     protected:
-        // Canvas interface by itself doesn't allow its instantiation
-        // to create canvas object use more specific class
-        // (kBitmapCanvas, kContextCanvas, kPrinterCanvas)
-        kCanvas();
-        ~kCanvas();
-
         static inline void needResources(const kPen *pen, const kBrush *brush);
 
     protected:

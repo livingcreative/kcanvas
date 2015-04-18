@@ -89,6 +89,15 @@ static inline D2D1_COLOR_F c2c(const kColor &color)
     return clr;
 }
 
+template <typename T>
+static inline void SafeRelease(T &object)
+{
+    if (object) {
+        object->Release();
+        object = nullptr;
+    }
+}
+
 
 // TODO: getFactory() - is slow, think about speeding these methods
 #define P_RT static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_rt
@@ -102,9 +111,7 @@ kGradientImplD2D::kGradientImplD2D() :
 
 kGradientImplD2D::~kGradientImplD2D()
 {
-    if (p_gradient) {
-        p_gradient->Release();
-    }
+    SafeRelease(p_gradient);
 }
 
 void kGradientImplD2D::Initialize(const kGradientStop *stops, size_t count, kExtendType extend)
@@ -129,9 +136,7 @@ kPathImplD2D::kPathImplD2D() :
 kPathImplD2D::~kPathImplD2D()
 {
     CloseSink();
-    if (p_path) {
-        p_path->Release();
-    }
+    SafeRelease(p_path);
 }
 
 void kPathImplD2D::MoveTo(const kPoint &p)
@@ -262,9 +267,7 @@ kBitmapImplD2D::kBitmapImplD2D() :
 
 kBitmapImplD2D::~kBitmapImplD2D()
 {
-    if (p_bitmap) {
-        p_bitmap->Release();
-    }
+    SafeRelease(p_bitmap);
 }
 
 void kBitmapImplD2D::Initialize(size_t width, size_t height, kBitmapFormat format)
@@ -343,7 +346,6 @@ bool kCanvasImplD2D::BindToContext(kContext context)
 
     P_RT->BindDC(HDC(context), &rc);
     P_RT->BeginDraw();
-    //P_RT->Clear();
 
     return true;
 }
@@ -359,13 +361,15 @@ bool kCanvasImplD2D::Unbind()
 }
 
 
-#define pen_not_empty pen //&& resourceData<PenData>(pen).p_style != kPenStyle::Clear
+#define pen_not_empty pen
 #define brush_not_empty brush && resourceData<BrushData>(brush).p_style != kBrushStyle::Clear
 
 #define _pen reinterpret_cast<ID2D1Brush*>(native(pen)[kD2DPen::RESOURCE_BRUSH]), resourceData<PenData>(pen).p_width, reinterpret_cast<ID2D1StrokeStyle*>(native(pen)[kD2DPen::RESOURCE_STYLE])
 #define _pen_width resourceData<PenData>(pen).p_width
 #define _brush reinterpret_cast<ID2D1Brush*>(native(brush)[kD2DBrush::RESOURCE_BRUSH])
-#define _font_format reinterpret_cast<IDWriteTextFormat*>(native(font)[kD2DFont::RESOURCE_TEXTFORMAT])
+#define _font_face reinterpret_cast<IDWriteFontFace*>(native(font)[kD2DFont::RESOURCE_FONTFACE])
+#define _font_size resourceData<FontData>(font).p_size
+#define _font_style resourceData<FontData>(font).p_style
 
 
 void kCanvasImplD2D::Line(const kPoint &a, const kPoint &b, const kPenBase *pen)
@@ -494,32 +498,170 @@ void kCanvasImplD2D::DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin,
     );
 }
 
-kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *font)
+static inline float PointSizeToFontSize(float size)
 {
-    return kSize();
-    /*
-    wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-    wstring t = convert.from_bytes(text);
-
-    IDWriteTextLayout *layout;
-    DWRITE_TEXT_METRICS tm;
-    P_DW->CreateTextLayout(t.c_str(), t.length(), _font_format, 0.0f, 0.0f, &layout);
-    layout->GetMetrics(&tm);
-    kSize res(tm.width, tm.height);
-    layout->Release();
-    return res;
-    */
+    return size * (1.0f / 72.0f * 96.0f);
 }
 
-void kCanvasImplD2D::TextOut(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush)
+static inline float PointSizeToDesignUnitsRatio(float size, float designunitsperem)
+{
+    return PointSizeToFontSize(size) / designunitsperem;
+}
+
+void kCanvasImplD2D::GetFontMetrics(const kFontBase *font, kFontMetrics *metrics)
+{
+    DWRITE_FONT_METRICS m;
+    _font_face->GetMetrics(&m);
+    float k = PointSizeToDesignUnitsRatio(_font_size, m.designUnitsPerEm);
+
+    metrics->ascent = m.ascent * k;
+    metrics->descent = m.descent * k;
+    metrics->height = metrics->ascent + metrics->descent;
+    metrics->linegap = m.lineGap * k;
+    metrics->underlinepos = m.underlinePosition * k;
+    metrics->underlinewidth = m.underlineThickness * k;
+    metrics->strikethroughpos = m.strikethroughPosition * k;
+    metrics->strikethroughwidth = m.strikethroughThickness * k;
+}
+
+void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics)
+{
+    DWRITE_FONT_METRICS m;
+    _font_face->GetMetrics(&m);
+    float k = PointSizeToDesignUnitsRatio(_font_size, m.designUnitsPerEm);
+
+    kGlyphMetrics *cm = metrics;
+    for (size_t n = first; n <= last; ++n) {
+        // TODO: optimize for whole range
+        UINT16 index = 0;
+        _font_face->GetGlyphIndicesW(&n, 1, &index);
+
+        DWRITE_GLYPH_METRICS abc;
+        _font_face->GetDesignGlyphMetrics(&index, 1, &abc, FALSE);
+
+        cm->a = abc.leftSideBearing * k;
+        cm->b = abc.advanceWidth * k;
+        cm->c = abc.rightSideBearing * k;
+
+        ++cm;
+    }
+}
+
+kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *font, kSize *bounds)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-    wstring t = convert.from_bytes(text);
+    wstring t = count == -1 ?
+        convert.from_bytes(text) :
+        convert.from_bytes(text, text + count);
 
-    P_RT->DrawTextW(
-        t.c_str(), count == -1 ? t.length() : count, _font_format,
-        D2D1::RectF(p.x, p.y, p.x + 9999, p.y + 9999), _brush
-    );
+    size_t length = t.length();
+    size_t pos = 0;
+
+    kSize result;
+
+    DWRITE_FONT_METRICS m;
+    _font_face->GetMetrics(&m);
+    float k = PointSizeToDesignUnitsRatio(_font_size, m.designUnitsPerEm);
+
+    result.height = (m.ascent + m.descent) * k;
+
+    const size_t BUFFER_LEN = 256;
+    DWRITE_GLYPH_METRICS abc[BUFFER_LEN];
+    UINT32 codepoints[BUFFER_LEN];
+    UINT16 indices[BUFFER_LEN];
+
+    while (pos < length) {
+        size_t curlen = umin(length - pos, BUFFER_LEN);
+
+        for (size_t n = 0; n < curlen; ++n) {
+            codepoints[n] = t[n + pos];
+        }
+        _font_face->GetGlyphIndicesW(codepoints, curlen, indices);
+
+        _font_face->GetDesignGlyphMetrics(indices, curlen, abc, FALSE);
+        for (size_t n = 0; n < curlen; ++n) {
+            result.width += abc[n].advanceWidth * k;
+        }
+
+        pos += curlen;
+
+        if (bounds && pos == length) {
+            *bounds = result;
+            bounds->width -= abc[pos - 1].rightSideBearing * k;
+            bounds->height += m.lineGap * k;
+        }
+    }
+
+    return result;
+}
+
+void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush)
+{
+    wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
+    wstring t = count == -1 ?
+        convert.from_bytes(text) :
+        convert.from_bytes(text, text + count);
+
+    size_t length = t.length();
+    size_t pos = 0;
+
+    const size_t BUFFER_LEN = 256;
+    UINT16 indices[BUFFER_LEN];
+    FLOAT advances[BUFFER_LEN];
+    DWRITE_GLYPH_METRICS abc[BUFFER_LEN];
+    UINT32 codepoints[BUFFER_LEN];
+
+    DWRITE_GLYPH_RUN run;
+    run.fontFace      = _font_face;
+    run.fontEmSize    = PointSizeToFontSize(_font_size);
+    run.glyphIndices  = indices;
+    run.glyphAdvances = advances;
+    run.glyphOffsets  = nullptr;
+    run.isSideways    = FALSE;
+    run.bidiLevel     = 0;
+
+    DWRITE_FONT_METRICS m;
+    _font_face->GetMetrics(&m);
+    float k = run.fontEmSize / m.designUnitsPerEm;
+
+    D2D1_POINT_2F cp = p2pD2D(p + kPoint(0, m.ascent * k));
+    while (pos < length) {
+        size_t curlen = umin(length - pos, BUFFER_LEN);
+
+        for (size_t n = 0; n < curlen; ++n) {
+            codepoints[n] = t[n + pos];
+        }
+        _font_face->GetGlyphIndicesW(codepoints, curlen, indices);
+
+        _font_face->GetDesignGlyphMetrics(indices, curlen, abc, run.isSideways);
+        FLOAT advance = 0;
+        for (size_t n = 0; n < curlen; ++n) {
+            advances[n] = abc[n].advanceWidth * k;
+            advance += advances[n];
+        }
+
+        run.glyphCount = curlen;
+        P_RT->DrawGlyphRun(cp, &run, _brush);
+        cp.x += advance;
+
+        pos += curlen;
+    }
+
+    // underlines and strikethroughs drawn as lines
+    if (_font_style & kFontStyle::Underline) {
+        kScalar offset = (m.ascent - m.underlinePosition + m.underlineThickness * 0.5f) * k;
+        P_RT->DrawLine(
+            p2pD2D(p + kPoint(0, offset)), p2pD2D(kPoint(cp.x, p.y + offset)),
+            _brush, m.underlineThickness * k
+        );
+    }
+    if (_font_style & kFontStyle::Strikethrough) {
+        kScalar offset = (m.ascent - m.strikethroughPosition + m.strikethroughThickness * 0.5f) * k;
+        P_RT->DrawLine(
+            p2pD2D(p + kPoint(0, offset)), p2pD2D(kPoint(cp.x, p.y + offset)),
+            _brush, m.strikethroughThickness * k
+        );
+    }
 }
 
 ID2D1PathGeometry* kCanvasImplD2D::GeomteryFromPoints(const kPoint *points, size_t count, bool closed)
@@ -712,28 +854,21 @@ kD2DPen::kD2DPen(const PenData &pen)
 
 kD2DPen::~kD2DPen()
 {
-    if (p_brush) {
-        p_brush->Release();
-    }
-
-    if (p_strokestyle) {
-        p_strokestyle->Release();
-    }
+    SafeRelease(p_brush);
+    SafeRelease(p_strokestyle);
 }
 
 
 kD2DBrush::kD2DBrush(const BrushData &brush) :
-    p_brush(nullptr),
-    p_gradient(nullptr),
-    p_bitmap(nullptr)
+    p_brush(nullptr)
 {
     if (brush.p_style == kBrushStyle::Clear) {
         return;
     }
 
+    ID2D1GradientStopCollection *gradient = nullptr;
     if (brush.p_style == kBrushStyle::LinearGradient || brush.p_style == kBrushStyle::RadialGradient) {
-        p_gradient = reinterpret_cast<kGradientImplD2D*>(brush.p_gradient)->p_gradient;
-        p_gradient->AddRef();
+        gradient = reinterpret_cast<kGradientImplD2D*>(brush.p_gradient)->p_gradient;
     }
 
     switch (brush.p_style) {
@@ -750,7 +885,7 @@ kD2DBrush::kD2DBrush(const BrushData &brush) :
                 p2pD2D(brush.p_end)
             };
             P_RT->CreateLinearGradientBrush(
-                p, p_gradient,
+                p, gradient,
                 reinterpret_cast<ID2D1LinearGradientBrush**>(&p_brush)
             );
             break;
@@ -763,15 +898,14 @@ kD2DBrush::kD2DBrush(const BrushData &brush) :
             p.radiusX = brush.p_radius.width;
             p.radiusY = brush.p_radius.height;
             P_RT->CreateRadialGradientBrush(
-                p, p_gradient,
+                p, gradient,
                 reinterpret_cast<ID2D1RadialGradientBrush**>(&p_brush)
             );
             break;
         }
 
         case kBrushStyle::Bitmap: {
-            p_bitmap = reinterpret_cast<kBitmapImplD2D*>(brush.p_bitmap)->p_bitmap;
-            p_bitmap->AddRef();
+            ID2D1Bitmap *bitmap = reinterpret_cast<kBitmapImplD2D*>(brush.p_bitmap)->p_bitmap;
 
             const D2D1_EXTEND_MODE modes[2] = {
                 D2D1_EXTEND_MODE_CLAMP,
@@ -784,8 +918,7 @@ kD2DBrush::kD2DBrush(const BrushData &brush) :
             p.interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_LINEAR;
 
             P_RT->CreateBitmapBrush(
-                p_bitmap,
-                p,
+                bitmap, p,
                 reinterpret_cast<ID2D1BitmapBrush**>(&p_brush)
             );
             break;
@@ -795,15 +928,7 @@ kD2DBrush::kD2DBrush(const BrushData &brush) :
 
 kD2DBrush::~kD2DBrush()
 {
-    if (p_brush) {
-        p_brush->Release();
-    }
-    if (p_gradient) {
-        p_gradient->Release();
-    }
-    if (p_bitmap) {
-        p_bitmap->Release();
-    }
+    SafeRelease(p_brush);
 }
 
 
@@ -812,6 +937,7 @@ kD2DFont::kD2DFont(const FontData &font)
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
     wstring t = convert.from_bytes(font.p_facename);
 
+    IDWriteTextFormat *format = nullptr;
     P_DW->CreateTextFormat(
         t.c_str(), nullptr,
         font.p_style & kFontStyle::Bold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL,
@@ -819,33 +945,32 @@ kD2DFont::kD2DFont(const FontData &font)
         DWRITE_FONT_STRETCH_NORMAL,
         font.p_size / 72.0f * 96.0f,
         L"",
-        &p_textformat
+        &format
     );
-    p_textformat->SetWordWrapping(DWRITE_WORD_WRAPPING_NO_WRAP);
 
     IDWriteFontCollection *c;
     WCHAR n[256];
-    p_textformat->GetFontCollection(&c);
-    p_textformat->GetFontFamilyName(n, 256);
+    format->GetFontCollection(&c);
+    format->GetFontFamilyName(n, 256);
     UINT32 i;
     BOOL e;
     c->FindFamilyName(n, &i, &e);
     IDWriteFontFamily *ff;
     c->GetFontFamily(i, &ff);
     ff->GetFirstMatchingFont(
-        p_textformat->GetFontWeight(), p_textformat->GetFontStretch(),
-        p_textformat->GetFontStyle(), &p_font
+        format->GetFontWeight(), format->GetFontStretch(),
+        format->GetFontStyle(), &p_font
     );
+
+    p_font->CreateFontFace(&p_face);
+
+    format->Release();
 }
 
 kD2DFont::~kD2DFont()
 {
-    if (p_textformat) {
-        p_textformat->Release();
-    }
-    if (p_font) {
-        p_font->Release();
-    }
+    SafeRelease(p_font);
+    SafeRelease(p_face);
 }
 
 
@@ -978,17 +1103,9 @@ CanvasFactoryD2D::CanvasFactoryD2D() :
 
 CanvasFactoryD2D::~CanvasFactoryD2D()
 {
-    if (p_rt) {
-        p_rt->Release();
-    }
-
-    if (p_factory) {
-        p_factory->Release();
-    }
-
-    if (p_dwrite_factory) {
-        p_dwrite_factory->Release();
-    }
+    SafeRelease(p_rt);
+    SafeRelease(p_factory);
+    SafeRelease(p_dwrite_factory);
 
     if (p_d2d1_dll) {
         FreeLibrary(p_d2d1_dll);

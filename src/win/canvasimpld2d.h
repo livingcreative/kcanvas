@@ -23,7 +23,12 @@ namespace k_canvas
 {
     namespace impl
     {
-
+        /*
+         -------------------------------------------------------------------------------
+         kGradientImplD2D
+         -------------------------------------------------------------------------------
+            gradient resource object Direct2D implementation
+        */
         class kGradientImplD2D : public kGradientImpl
         {
             friend class kD2DBrush;
@@ -38,6 +43,13 @@ namespace k_canvas
             ID2D1GradientStopCollection *p_gradient;
         };
 
+
+        /*
+         -------------------------------------------------------------------------------
+         kPathImplD2D
+         -------------------------------------------------------------------------------
+            path resource object Direct2D implementation
+        */
         class kPathImplD2D : public kPathImpl
         {
             friend class kCanvasImplD2D;
@@ -70,6 +82,12 @@ namespace k_canvas
         };
 
 
+        /*
+         -------------------------------------------------------------------------------
+         kBitmapImplD2D
+         -------------------------------------------------------------------------------
+            bitmap resource object Direct2D implementation
+        */
         class kBitmapImplD2D : public kBitmapImpl
         {
             friend class kCanvasImplD2D;
@@ -87,6 +105,12 @@ namespace k_canvas
         };
 
 
+        /*
+         -------------------------------------------------------------------------------
+         kCanvasImplD2D
+         -------------------------------------------------------------------------------
+            canvas Direct2D implementation
+        */
         class kCanvasImplD2D : public kCanvasImpl
         {
             friend class kD2DPenAllocator;
@@ -116,8 +140,10 @@ namespace k_canvas
             void DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush) override;
             void DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha) override;
 
-            kSize TextSize(const char *text, int count, const kFontBase *font) override;
-            void TextOut(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush) override;
+            void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) override;
+            void GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics) override;
+            kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) override;
+            void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush) override;
 
         private:
             ID2D1PathGeometry* GeomteryFromPoints(const kPoint *points, size_t count, bool closed);
@@ -128,6 +154,12 @@ namespace k_canvas
         };
 
 
+        /*
+         -------------------------------------------------------------------------------
+         kD2DStroke
+         -------------------------------------------------------------------------------
+            stroke resource object Direct2D implementation
+        */
         class kD2DStroke : public kResourceObject
         {
         public:
@@ -152,6 +184,12 @@ namespace k_canvas
         };
 
 
+        /*
+         -------------------------------------------------------------------------------
+         kD2DPen
+         -------------------------------------------------------------------------------
+            pen resource object Direct2D implementation
+        */
         class kD2DPen : public kResourceObject
         {
         public:
@@ -182,13 +220,18 @@ namespace k_canvas
         };
 
 
+        /*
+         -------------------------------------------------------------------------------
+         kD2DBrush
+         -------------------------------------------------------------------------------
+            brush resource object Direct2D implementation
+        */
         class kD2DBrush : public kResourceObject
         {
         public:
             enum ResourceIndex
             {
-                RESOURCE_BRUSH,
-                RESOURCE_GRADIENT
+                RESOURCE_BRUSH
             };
 
         public:
@@ -200,44 +243,50 @@ namespace k_canvas
             void setupNativeResources(void **native) override
             {
                 native[RESOURCE_BRUSH] = p_brush;
-                native[RESOURCE_GRADIENT] = p_gradient;
             }
 
         private:
-            ID2D1Brush                  *p_brush;
-            ID2D1GradientStopCollection *p_gradient;
-            ID2D1Bitmap                 *p_bitmap;
+            ID2D1Brush *p_brush;
         };
 
 
+        /*
+         -------------------------------------------------------------------------------
+         kD2DFont
+         -------------------------------------------------------------------------------
+            font resource object Direct2D implementation
+        */
         class kD2DFont : public kResourceObject
         {
         public:
             enum ResourceIndex
             {
-                RESOURCE_TEXTFORMAT,
-                RESOURCE_FONT
+                RESOURCE_FONT,
+                RESOURCE_FONTFACE
             };
 
         public:
             kD2DFont(const FontData &font);
             ~kD2DFont() override;
 
-            IDWriteTextFormat* getTextFormat() const { return p_textformat; }
-            IDWriteFont* getFont() const { return p_font; }
-
             void setupNativeResources(void **native) override
             {
-                native[RESOURCE_TEXTFORMAT] = p_textformat;
                 native[RESOURCE_FONT] = p_font;
+                native[RESOURCE_FONTFACE] = p_face;
             }
 
         private:
-            IDWriteTextFormat *p_textformat;
-            IDWriteFont       *p_font;
+            IDWriteFont     *p_font;
+            IDWriteFontFace *p_face;
         };
 
 
+        /*
+         -------------------------------------------------------------------------------
+         kD2DStrokeAllocator
+         -------------------------------------------------------------------------------
+            allocator for stroke Direct2D resource objects
+        */
         class kD2DStrokeAllocator
         {
         public:
@@ -246,6 +295,13 @@ namespace k_canvas
             static void adjustResource(kD2DStroke *resource, const StrokeData &data) {}
         };
 
+
+        /*
+         -------------------------------------------------------------------------------
+         kD2DPenAllocator
+         -------------------------------------------------------------------------------
+            allocator for pen Direct2D resource objects
+        */
         class kD2DPenAllocator
         {
         public:
@@ -254,6 +310,13 @@ namespace k_canvas
             static void adjustResource(kD2DPen *resource, const PenData &data) {}
         };
 
+
+        /*
+         -------------------------------------------------------------------------------
+         kD2DBrushAllocator
+         -------------------------------------------------------------------------------
+            allocator for brush Direct2D resource objects
+        */
         class kD2DBrushAllocator
         {
         public:
@@ -262,6 +325,13 @@ namespace k_canvas
             static void adjustResource(kD2DBrush *resource, const BrushData &data);
         };
 
+
+        /*
+         -------------------------------------------------------------------------------
+         kD2DFontAllocator
+         -------------------------------------------------------------------------------
+            allocator for font Direct2D resource objects
+        */
         class kD2DFontAllocator
         {
         public:
@@ -270,6 +340,13 @@ namespace k_canvas
             static void adjustResource(kD2DFont *resource, const FontData &data) {}
         };
 
+
+        /*
+         -------------------------------------------------------------------------------
+         CanvasFactoryD2D
+         -------------------------------------------------------------------------------
+            Direct2D factory implementation
+        */
         class CanvasFactoryD2D : public CanvasFactoryImpl<
             kGradientImplD2D,
             kPathImplD2D,

@@ -83,9 +83,10 @@ namespace k_canvas
     struct kFontStyle
     {
         enum Style {
-            Bold      = 0x01,
-            Italic    = 0x02,
-            Underline = 0x04
+            Bold          = 0x01,
+            Italic        = 0x02,
+            Underline     = 0x04,
+            Strikethrough = 0x08
         };
 
         kFontStyle() : p_value() {}
@@ -162,6 +163,25 @@ namespace k_canvas
     };
 
     // simple text rendering structs
+    struct kFontMetrics
+    {
+        kScalar ascent;
+        kScalar descent;
+        kScalar height;
+        kScalar linegap;
+        kScalar underlinepos;
+        kScalar underlinewidth;
+        kScalar strikethroughpos;
+        kScalar strikethroughwidth;
+    };
+
+    struct kGlyphMetrics
+    {
+        kScalar a;
+        kScalar b;
+        kScalar c;
+    };
+
     struct kTextSizeProperties
     {
     };

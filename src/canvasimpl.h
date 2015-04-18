@@ -226,8 +226,10 @@ namespace k_canvas
             virtual void DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush) = 0;
             virtual void DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha) = 0;
 
-            virtual kSize TextSize(const char *text, int count, const kFontBase *font) = 0;
-            virtual void TextOut(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush) = 0;
+            virtual void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) = 0;
+            virtual void GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics) = 0;
+            virtual kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) = 0;
+            virtual void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush) = 0;
 
         protected:
             // access to resource data
