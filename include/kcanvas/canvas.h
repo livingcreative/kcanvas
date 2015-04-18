@@ -212,7 +212,7 @@ namespace k_canvas
 
         properties for linear gradient fill
             kPoint start - gradient line starting point (where color from 0 stop position sampled)
-            kPoint end   - gradient line endinf point (where color from 1 stop position sampled)
+            kPoint end   - gradient line ending point (where color from 1 stop position sampled)
 
         properties for radial gradient fill
             kPoint center - radial gradient center point (where color from 1 stop position sampled)
@@ -288,50 +288,50 @@ namespace k_canvas
 
         Path construction commands
             MoveTo(kPoint point)
-                moves current point to specified point
+                move current point to specified point
                 closes currently open figure and starts new one with specified point
                 default current point value is (0, 0)
 
             LineTo(kPoint point)
-                adds straight line to current figure from current path point to
+                add straight line to current figure from current path point to
                 specified point
 
             BezierTo(kPoint p1, kPoint p2, kPoint p3)
-                adds qubic bezier line to current figure
+                add qubic bezier line to current figure
                 p1 is first control point
                 p2 is second control point
                 p3 is line end point
 
             ArcTo(kRect rect, kScalar start, kScalar end)
-                adds elliptic arc to current path
+                add elliptic arc to current path
                 rect is ellipse bounding rectangle
                 start is start arc angle
                 end is end arc angle
                 angles are counted clockwise with 0 matching to Y-up axis
 
             PolyLineTo(kPoint points[], size_t count)
-                adds multiple connected line segments to current path
+                add multiple connected line segments to current path
                 points - array of points
                 count - point count (matches total line segments being added)
 
             PolyBezierTo(kPoint points[], size_t count);
-                adds multiple connected bezier segments
+                add multiple connected bezier segments
                 points - array of points
                 count - point count, should be a multiple of 3
 
             Text(char text[], kFont font)
-                adds straight line of text as set of glyph contours
+                add straight line of text as set of glyph contours
                 current open figure is closed before adding glyph contours
 
             Close
-                closes current open figure
+                close current open figure
 
         Path object commands
             Clear
-                resets all path data and transfers path object to construction state
+                reset all path data and transfers path object to construction state
 
             Commit
-                finishes path construction and transfers path object to ready state
+                finishe path construction and transfers path object to ready state
     */
     class kPath
     {
@@ -376,7 +376,7 @@ namespace k_canvas
 
         Methods
             Update(optional kRect updaterect, kBitmapFormat source format, size_t sourcepitch, data)
-                updaes whole or part of bitmap's pixel data
+                updae whole or part of bitmap's pixel data
                 updateerect - optional destination rectangle
                     if not provided the whole bitmap is updated
                     always clipped to bitmap's dimensions
@@ -416,6 +416,46 @@ namespace k_canvas
         canvas object
 
         defines basic canvas interface
+
+        canvas doesn't have notion of current position point
+        all primitive drawing functions take all the points they need
+
+        there are only few basic primitve drawing functions
+        complex shapes can be defined by path object
+
+        non-closed outlines
+            Line       - draw straight line from a to b
+            Bezier     - draw qubic bezier line
+                p1 - starting point, p2 - first control point,
+                p3 - second control point, p4 - ending point
+            Arc        - draw arc inscribed in rectangle
+            PolyLine   - draw multiple lines connected with each other
+            PolyBezier - draw multiple bezier lines connected with each other
+
+            for Poly* commands - first point is a starting point
+            for PolyLine each point (except first one) defines line segment from
+            previous point
+            for PolyBezier every three points define two control points and
+            ending point for segment (total point count should be multiple of 3 + 1)
+
+        closed outlines
+            Rectangle        - draw rectangle
+            RoundedRectangle - draw rounded rectangle
+                round parameter represents radius for corner rounding
+            Ellipse          - draw ellipse
+            Polygon          - draw polygon
+                last point is always connected with the first one
+            PolygonBezier    - draw polygon with bezier segments
+                similar to PolyLine every bezier segment is defined by three points
+                except the last one - it should contain only two control points and
+                the last point is automatically equals to first point
+
+        object drawing
+            DrawPath command draws kPath object
+            DrawBitmap commands are used to draw kBitmap objects
+
+        text measurement and drawing
+            canvas provides only basic text drawing capabilities
     */
     class kCanvas
     {
