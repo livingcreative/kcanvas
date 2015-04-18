@@ -83,7 +83,7 @@ void kPathImplDefault::PolyBezierTo(const kPoint *points, size_t count)
     }
 }
 
-void kPathImplDefault::Text(const char *text, const kFontBase *font)
+void kPathImplDefault::Text(const char *text, int count, const kFontBase *font, kTextOrigin origin)
 {
     if (p_curr_command + 1 > p_commands.size()) {
         p_commands.resize(p_commands.size() + 16);

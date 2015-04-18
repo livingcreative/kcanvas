@@ -22,6 +22,7 @@ namespace k_canvas
 {
     // Forward kCanvas objects declarations
     class kPen;
+    class kPath;
     class kCanvas;
 
     namespace impl
@@ -118,6 +119,7 @@ namespace k_canvas
         class kSharedResourceBase
         {
             friend class k_canvas::kPen;
+            friend class k_canvas::kPath;
             friend class k_canvas::kCanvas;
             friend class kCanvasImpl;
 

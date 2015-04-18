@@ -99,6 +99,13 @@ namespace k_canvas
         uint32_t p_value;
     };
 
+    // Text drawing origin
+    enum class kTextOrigin
+    {
+        Top      = 0,
+        BaseLine = 1
+    };
+
     // kBitmap data formats
     enum class kBitmapFormat
     {

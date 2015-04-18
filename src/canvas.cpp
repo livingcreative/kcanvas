@@ -332,9 +332,12 @@ void kPath::PolyBezierTo(const kPoint *points, size_t count)
     p_impl->PolyBezierTo(points, count);
 }
 
-void kPath::Text(const char *text, const kFont *font)
+void kPath::Text(const char *text, int count, const kFont *font, kTextOrigin origin)
 {
-    p_impl->Text(text, font);
+    if (font) {
+        font->needResource();
+        p_impl->Text(text, count, font, origin);
+    }
 }
 
 void kPath::Close()
@@ -526,7 +529,7 @@ kSize kCanvas::TextSize(const char *text, int count, const kFont *font, kSize *b
     return p_impl->TextSize(text, count, font, bounds);
 }
 
-void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush)
+void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush, kTextOrigin origin)
 {
     if (brush && font) {
         if (brush) {
@@ -535,7 +538,7 @@ void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont *fo
         if (font) {
             font->needResource();
         }
-        p_impl->Text(p, text, count, font, brush);
+        p_impl->Text(p, text, count, font, brush, origin);
     }
 }
 

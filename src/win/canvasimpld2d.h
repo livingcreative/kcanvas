@@ -63,7 +63,7 @@ namespace k_canvas
             void BezierTo(const kPoint &p1, const kPoint &p2, const kPoint &p3) override;
             void PolyLineTo(const kPoint *points, size_t count) override;
             void PolyBezierTo(const kPoint *points, size_t count) override;
-            void Text(const char *text, const kFontBase *font) override;
+            void Text(const char *text, int count, const kFontBase *font, kTextOrigin origin) override;
             void Close() override;
             
             void Clear() override;
@@ -72,10 +72,11 @@ namespace k_canvas
         private:
             void OpenSink();
             void CloseSink() const;
-            void OpenFigure(const D2D1_POINT_2F &p);
+            void OpenFigure();
             void CloseFigure(bool opened) const;
 
         private:
+            D2D1_POINT_2F              p_cp;
             ID2D1PathGeometry         *p_path;
             mutable ID2D1GeometrySink *p_sink;
             mutable bool               p_opened;
@@ -113,6 +114,7 @@ namespace k_canvas
         */
         class kCanvasImplD2D : public kCanvasImpl
         {
+            friend class kPathImplD2D;
             friend class kD2DPenAllocator;
             friend class kD2DBrushAllocator;
             friend class kD2DFontAllocator;
@@ -143,7 +145,7 @@ namespace k_canvas
             void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) override;
             void GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics) override;
             kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) override;
-            void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush) override;
+            void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) override;
 
         private:
             ID2D1PathGeometry* GeomteryFromPoints(const kPoint *points, size_t count, bool closed);

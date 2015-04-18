@@ -349,7 +349,7 @@ namespace k_canvas
         void ArcTo(const kRect &rect, kScalar start, kScalar end);
         void PolyLineTo(const kPoint *points, size_t count);
         void PolyBezierTo(const kPoint *points, size_t count);
-        void Text(const char *text, const kFont *font);
+        void Text(const char *text, int count, const kFont *font, kTextOrigin origin = kTextOrigin::Top);
         void Close();
 
         // path clear & commit
@@ -456,6 +456,15 @@ namespace k_canvas
 
         text measurement and drawing
             canvas provides only basic text drawing capabilities
+            to draw complex formatted text one could use own implementation above
+            basic text drawing functions
+
+            GetFontMetrics       - retrieve basic font metrics
+            GetGlyphMetrics      - retrieve array of glyph metrics for glyph range
+            TextSize             - single or multiline text measurement
+            Text(kPoint p ...)   - render single line of text with specified font and brush
+            Text(kRect rect ...) - render bounded multiline text
+                with optional alignment and clipping
     */
     class kCanvas
     {
@@ -492,7 +501,7 @@ namespace k_canvas
         void GetFontMetrics(const kFont *font, kFontMetrics *metrics);
         void GetGlyphMetrics(const kFont *font, size_t first, size_t last, kGlyphMetrics *metrics);
         kSize TextSize(const char *text, int count, const kFont *font, kSize *bounds = nullptr, const kTextSizeProperties *properties = nullptr);
-        void Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush);
+        void Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush, kTextOrigin origin = kTextOrigin::Top);
         void Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties = nullptr);
 
         // masking

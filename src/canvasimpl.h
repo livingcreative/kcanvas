@@ -113,7 +113,7 @@ namespace k_canvas
             virtual void BezierTo(const kPoint &p1, const kPoint &p2, const kPoint &p3) = 0;
             virtual void PolyLineTo(const kPoint *points, size_t count) = 0;
             virtual void PolyBezierTo(const kPoint *points, size_t count) = 0;
-            virtual void Text(const char *text, const kFontBase *font) = 0;
+            virtual void Text(const char *text, int count, const kFontBase *font, kTextOrigin origin) = 0;
             virtual void Close() = 0;
 
             virtual void Clear() = 0;
@@ -139,7 +139,7 @@ namespace k_canvas
             void BezierTo(const kPoint &p1, const kPoint &p2, const kPoint &p3) override;
             void PolyLineTo(const kPoint *points, size_t count) override;
             void PolyBezierTo(const kPoint *points, size_t count) override;
-            void Text(const char *text, const kFontBase *font) override;
+            void Text(const char *text, int count, const kFontBase *font, kTextOrigin origin) override;
             void Close() override;
 
             void Clear() override;
@@ -229,7 +229,7 @@ namespace k_canvas
             virtual void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) = 0;
             virtual void GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics) = 0;
             virtual kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) = 0;
-            virtual void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush) = 0;
+            virtual void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) = 0;
 
         protected:
             // access to resource data

@@ -89,6 +89,16 @@ static inline D2D1_COLOR_F c2c(const kColor &color)
     return clr;
 }
 
+static inline float PointSizeToFontSize(float size)
+{
+    return size * (1.0f / 72.0f * 96.0f);
+}
+
+static inline float PointSizeToDesignUnitsRatio(float size, float designunitsperem)
+{
+    return PointSizeToFontSize(size) / designunitsperem;
+}
+
 template <typename T>
 static inline void SafeRelease(T &object)
 {
@@ -103,6 +113,16 @@ static inline void SafeRelease(T &object)
 #define P_RT static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_rt
 #define P_F static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_factory
 #define P_DW static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_dwrite_factory
+
+#define pen_not_empty pen
+#define brush_not_empty brush && resourceData<BrushData>(brush).p_style != kBrushStyle::Clear
+
+#define _pen reinterpret_cast<ID2D1Brush*>(native(pen)[kD2DPen::RESOURCE_BRUSH]), resourceData<PenData>(pen).p_width, reinterpret_cast<ID2D1StrokeStyle*>(native(pen)[kD2DPen::RESOURCE_STYLE])
+#define _pen_width resourceData<PenData>(pen).p_width
+#define _brush reinterpret_cast<ID2D1Brush*>(native(brush)[kD2DBrush::RESOURCE_BRUSH])
+#define _font_face reinterpret_cast<IDWriteFontFace*>(kCanvasImplD2D::native(font)[kD2DFont::RESOURCE_FONTFACE])
+#define _font_size kCanvasImplD2D::resourceData<FontData>(font).p_size
+#define _font_style resourceData<FontData>(font).p_style
 
 
 kGradientImplD2D::kGradientImplD2D() :
@@ -130,6 +150,8 @@ kPathImplD2D::kPathImplD2D() :
     p_sink(nullptr),
     p_opened(false)
 {
+    p_cp.x = 0;
+    p_cp.y = 0;
     P_F->CreatePathGeometry(&p_path);
 }
 
@@ -142,34 +164,32 @@ kPathImplD2D::~kPathImplD2D()
 void kPathImplD2D::MoveTo(const kPoint &p)
 {
     CloseFigure(true);
-    OpenFigure(p2pD2D(p));
+    p_cp = p2pD2D(p);
 }
 
 void kPathImplD2D::LineTo(const kPoint &p)
 {
-    OpenFigure(p2pD2D(kPoint()));
-    p_sink->AddLine(p2pD2D(p));
+    OpenFigure();
+    p_cp = p2pD2D(p);
+    p_sink->AddLine(p_cp);
 }
 
 void kPathImplD2D::BezierTo(const kPoint &p1, const kPoint &p2, const kPoint &p3)
 {
-    OpenFigure(p2pD2D(kPoint()));
+    OpenFigure();
     D2D1_BEZIER_SEGMENT seg;
     seg.point1 = p2pD2D(p1);
     seg.point2 = p2pD2D(p2);
     seg.point3 = p2pD2D(p3);
+    p_cp = seg.point3;
     p_sink->AddBezier(&seg);
 }
 
 void kPathImplD2D::PolyLineTo(const kPoint *points, size_t count)
 {
+    OpenFigure();
+
     D2D1_POINT_2F cache[32];
-
-    if (!p_opened) {
-        OpenFigure(p2pD2D(*points++));
-        count--;
-    }
-
     while (count) {
         int cnt = min(count, 32);
         for (int n = 0; n < cnt; n++) {
@@ -179,10 +199,14 @@ void kPathImplD2D::PolyLineTo(const kPoint *points, size_t count)
         p_sink->AddLines(cache, cnt);
         count -= cnt;
     }
+
+    p_cp = p2pD2D(*(points - 1));
 }
 
 void kPathImplD2D::PolyBezierTo(const kPoint *points, size_t count)
 {
+    OpenFigure();
+
     size_t curr_pt = 0;
     while (curr_pt < count) {
         int cnt = min(30, count - curr_pt) / 3;
@@ -198,12 +222,66 @@ void kPathImplD2D::PolyBezierTo(const kPoint *points, size_t count)
         }
         p_sink->AddBeziers(segments, cnt);
     }
+
+    p_cp = p2pD2D(points[curr_pt - 1]);
 }
 
-void kPathImplD2D::Text(const char *text, const kFontBase *font)
+void kPathImplD2D::Text(const char *text, int count, const kFontBase *font, kTextOrigin origin)
 {
-    CloseFigure(true);
-    // TODO: implement text
+    if (p_sink) {
+        CloseFigure(true);
+    } else {
+        OpenSink();
+    }
+
+    wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
+    wstring t = count == -1 ?
+        convert.from_bytes(text) :
+        convert.from_bytes(text, text + count);
+
+    size_t length = t.length();
+    size_t pos = 0;
+
+    const size_t BUFFER_LEN = 256;
+    UINT16 indices[BUFFER_LEN];
+    DWRITE_GLYPH_METRICS abc[BUFFER_LEN];
+    DWRITE_GLYPH_OFFSET offsets[BUFFER_LEN];
+    UINT32 codepoints[BUFFER_LEN];
+
+    DWRITE_FONT_METRICS m;
+    _font_face->GetMetrics(&m);
+
+    FLOAT fontEmSize = PointSizeToFontSize(_font_size);
+    FLOAT k = fontEmSize / m.designUnitsPerEm;
+    FLOAT originy = origin == kTextOrigin::BaseLine ? 0 : -m.ascent * k;
+
+    while (pos < length) {
+        size_t curlen = umin(length - pos, BUFFER_LEN);
+
+        for (size_t n = 0; n < curlen; ++n) {
+            codepoints[n] = t[n + pos];
+            offsets[n].advanceOffset = p_cp.x;
+            offsets[n].ascenderOffset = + originy - p_cp.y;
+        }
+        _font_face->GetGlyphIndicesW(codepoints, curlen, indices);
+
+        _font_face->GetDesignGlyphMetrics(indices, curlen, abc, FALSE);
+        for (size_t n = 0; n < curlen; ++n) {
+            p_cp.x += abc[n].advanceWidth * k;
+        }
+
+        _font_face->GetGlyphRunOutline(
+            fontEmSize, indices, nullptr, offsets, curlen,
+            FALSE, FALSE, p_sink
+        );
+
+        pos += curlen;
+    }
+
+    // This is looks like a bug! GetGlyphRunOutline somehow changes
+    // geometry sink fill mode. MSDN docs says that SetFillMode() can be called
+    // only before first OpenFigure() call.
+    p_sink->SetFillMode(D2D1_FILL_MODE_ALTERNATE);
 }
 
 void kPathImplD2D::Close()
@@ -228,7 +306,7 @@ void kPathImplD2D::OpenSink()
     if (!p_sink) {
         p_path->Open(&p_sink);
         // TODO: think of adding fill mode to kcanvas API
-        //p_sink->SetFillMode(D2D1_FILL_MODE_WINDING);
+        //p_sink->SetFillMode(D2D1_FILL_MODE_ALTERNATE);
         p_opened = false;
     }
 }
@@ -242,11 +320,11 @@ void kPathImplD2D::CloseSink() const
     }
 }
 
-void kPathImplD2D::OpenFigure(const D2D1_POINT_2F &p)
+void kPathImplD2D::OpenFigure()
 {
     if (!p_opened) {
         OpenSink();
-        p_sink->BeginFigure(p, D2D1_FIGURE_BEGIN_FILLED);
+        p_sink->BeginFigure(p_cp, D2D1_FIGURE_BEGIN_FILLED);
         p_opened = true;
     }
 }
@@ -359,18 +437,6 @@ bool kCanvasImplD2D::Unbind()
     }
     return false;
 }
-
-
-#define pen_not_empty pen
-#define brush_not_empty brush && resourceData<BrushData>(brush).p_style != kBrushStyle::Clear
-
-#define _pen reinterpret_cast<ID2D1Brush*>(native(pen)[kD2DPen::RESOURCE_BRUSH]), resourceData<PenData>(pen).p_width, reinterpret_cast<ID2D1StrokeStyle*>(native(pen)[kD2DPen::RESOURCE_STYLE])
-#define _pen_width resourceData<PenData>(pen).p_width
-#define _brush reinterpret_cast<ID2D1Brush*>(native(brush)[kD2DBrush::RESOURCE_BRUSH])
-#define _font_face reinterpret_cast<IDWriteFontFace*>(native(font)[kD2DFont::RESOURCE_FONTFACE])
-#define _font_size resourceData<FontData>(font).p_size
-#define _font_style resourceData<FontData>(font).p_style
-
 
 void kCanvasImplD2D::Line(const kPoint &a, const kPoint &b, const kPenBase *pen)
 {
@@ -498,16 +564,6 @@ void kCanvasImplD2D::DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin,
     );
 }
 
-static inline float PointSizeToFontSize(float size)
-{
-    return size * (1.0f / 72.0f * 96.0f);
-}
-
-static inline float PointSizeToDesignUnitsRatio(float size, float designunitsperem)
-{
-    return PointSizeToFontSize(size) / designunitsperem;
-}
-
 void kCanvasImplD2D::GetFontMetrics(const kFontBase *font, kFontMetrics *metrics)
 {
     DWRITE_FONT_METRICS m;
@@ -595,7 +651,7 @@ kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *fon
     return result;
 }
 
-void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush)
+void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
     wstring t = count == -1 ?
@@ -607,7 +663,6 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
 
     const size_t BUFFER_LEN = 256;
     UINT16 indices[BUFFER_LEN];
-    FLOAT advances[BUFFER_LEN];
     DWRITE_GLYPH_METRICS abc[BUFFER_LEN];
     UINT32 codepoints[BUFFER_LEN];
 
@@ -615,16 +670,17 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
     run.fontFace      = _font_face;
     run.fontEmSize    = PointSizeToFontSize(_font_size);
     run.glyphIndices  = indices;
-    run.glyphAdvances = advances;
+    run.glyphAdvances = nullptr;
     run.glyphOffsets  = nullptr;
     run.isSideways    = FALSE;
     run.bidiLevel     = 0;
 
     DWRITE_FONT_METRICS m;
     _font_face->GetMetrics(&m);
-    float k = run.fontEmSize / m.designUnitsPerEm;
+    FLOAT k = run.fontEmSize / m.designUnitsPerEm;
+    FLOAT originy = origin == kTextOrigin::BaseLine ? 0 : m.ascent * k;
 
-    D2D1_POINT_2F cp = p2pD2D(p + kPoint(0, m.ascent * k));
+    D2D1_POINT_2F cp = p2pD2D(p + kPoint(0, originy));
     while (pos < length) {
         size_t curlen = umin(length - pos, BUFFER_LEN);
 
@@ -636,8 +692,7 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
         _font_face->GetDesignGlyphMetrics(indices, curlen, abc, run.isSideways);
         FLOAT advance = 0;
         for (size_t n = 0; n < curlen; ++n) {
-            advances[n] = abc[n].advanceWidth * k;
-            advance += advances[n];
+            advance += abc[n].advanceWidth * k;
         }
 
         run.glyphCount = curlen;
