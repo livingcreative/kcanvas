@@ -13,8 +13,9 @@
 */
 
 #pragma once
-#include "kcommon/c_util.h" // common utility funcs and types
-#include "canvasplatform.h" // implementation platform support
+#include "kcommon/c_util.h"     // common utility funcs and types
+#include "kcommon/c_geometry.h" // common geometric functions and types
+#include "canvasplatform.h"     // implementation platform support
 #include <cstdint>
 
 
@@ -31,6 +32,9 @@ namespace k_canvas
     typedef c_util::sizeT<kScalar> kSize;
     typedef c_util::rectT<kScalar> kRect;
     typedef c_util::rectT<int> kRectInt;
+
+    // basic types derived from c_geometry types
+    typedef c_geometry::mat3x2<kScalar> kTransform;
 
     // extend mode
     enum class kExtendType

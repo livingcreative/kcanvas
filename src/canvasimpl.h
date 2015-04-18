@@ -24,70 +24,6 @@ namespace k_canvas
     {
         /*
          -------------------------------------------------------------------------------
-         kRefcounted
-         -------------------------------------------------------------------------------
-            basic refcounted class implementation for unique resource objects
-        */
-        class kRefcounted
-        {
-        public:
-            kRefcounted() :
-                p_refcount(1)
-            {}
-
-            virtual ~kRefcounted()
-            {}
-
-            size_t addref()
-            {
-                return ++p_refcount;
-            }
-
-            size_t release()
-            {
-                if (--p_refcount == 0) {
-                    // 
-                    delete this;
-                    return 0;
-                }
-
-                return p_refcount;
-            }
-
-        private:
-            size_t p_refcount;
-        };
-
-        // safe resource release template func
-        template <typename T>
-        inline void ReleaseResource(T &resource)
-        {
-            if (resource) {
-                resource->release();
-                resource = nullptr;
-            }
-        }
-
-
-        /*
-         -------------------------------------------------------------------------------
-         kResourceObject
-         -------------------------------------------------------------------------------
-            base class for shareable resource objects
-
-            defines setupNativeResources(...) function which is used
-            by shareable resource objects to fill in native resource handles
-            for quick access inside implementation
-        */
-        class kResourceObject : public kRefcounted
-        {
-        public:
-            virtual void setupNativeResources(void **native) = 0;
-        };
-
-
-        /*
-         -------------------------------------------------------------------------------
          kGradientImpl
          -------------------------------------------------------------------------------
             interface for kGradient implementation
@@ -118,6 +54,8 @@ namespace k_canvas
 
             virtual void Clear() = 0;
             virtual void Commit() = 0;
+
+            virtual void FromPath(const kPathImpl *source, const kTransform &transform) = 0;
         };
 
 
@@ -224,6 +162,7 @@ namespace k_canvas
             virtual void PolygonBezier(const kPoint *points, size_t count, const kPenBase *pen, const kBrushBase *brush) = 0;
 
             virtual void DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush) = 0;
+            virtual void DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush, const kTransform &transform) = 0;
             virtual void DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha) = 0;
 
             virtual void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) = 0;

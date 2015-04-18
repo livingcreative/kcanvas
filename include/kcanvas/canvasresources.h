@@ -111,6 +111,70 @@ namespace k_canvas
 
         /*
          -------------------------------------------------------------------------------
+         kRefcounted
+         -------------------------------------------------------------------------------
+            basic refcounted class implementation for unique resource objects
+        */
+        class kRefcounted
+        {
+        public:
+            kRefcounted() :
+                p_refcount(1)
+            {}
+
+            virtual ~kRefcounted()
+            {}
+
+            size_t addref()
+            {
+                return ++p_refcount;
+            }
+
+            size_t release()
+            {
+                if (--p_refcount == 0) {
+                    // 
+                    delete this;
+                    return 0;
+                }
+
+                return p_refcount;
+            }
+
+        private:
+            size_t p_refcount;
+        };
+
+        // safe resource release template func
+        template <typename T>
+        inline void ReleaseResource(T &resource)
+        {
+            if (resource) {
+                resource->release();
+                resource = nullptr;
+            }
+        }
+
+
+        /*
+         -------------------------------------------------------------------------------
+         kResourceObject
+         -------------------------------------------------------------------------------
+            base class for shareable resource objects
+
+            defines setupNativeResources(...) function which is used
+            by shareable resource objects to fill in native resource handles
+            for quick access inside implementation
+        */
+        class kResourceObject : public kRefcounted
+        {
+        public:
+            virtual void setupNativeResources(void **native) = 0;
+        };
+
+
+        /*
+         -------------------------------------------------------------------------------
          kSharedResourceBase
          -------------------------------------------------------------------------------
             base class template for all shareable resource objects
@@ -127,6 +191,18 @@ namespace k_canvas
             kSharedResourceBase() :
                 p_resource(nullptr)
             {}
+
+            kSharedResourceBase(const kSharedResourceBase<Tdata> &source) :
+                p_data(source.p_data),
+                p_resource(source.p_resource)
+            {
+                if (p_resource) {
+                    for (size_t n = 0; n < MAX_NATIVE_RESOURCES; ++n) {
+                        p_native[n] = source.p_native[n];
+                    }
+                    p_resource->addref();
+                }
+            }
 
             ~kSharedResourceBase()
             {

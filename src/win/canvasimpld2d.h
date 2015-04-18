@@ -69,17 +69,21 @@ namespace k_canvas
             void Clear() override;
             void Commit() override;
 
-        private:
-            void OpenSink();
-            void CloseSink() const;
-            void OpenFigure();
-            void CloseFigure(bool opened) const;
+            void FromPath(const kPathImpl *source, const kTransform &transform) override;
+
+            ID2D1Geometry* MakeTransformedPath(const D2D1_MATRIX_3X2_F &transform) const;
 
         private:
-            D2D1_POINT_2F              p_cp;
-            ID2D1PathGeometry         *p_path;
-            mutable ID2D1GeometrySink *p_sink;
-            mutable bool               p_opened;
+            void OpenSink();
+            void CloseSink();
+            void OpenFigure();
+            void CloseFigure(bool opened);
+
+        private:
+            D2D1_POINT_2F      p_cp;
+            ID2D1Geometry     *p_path;
+            ID2D1GeometrySink *p_sink;
+            bool               p_opened;
         };
 
 
@@ -140,6 +144,7 @@ namespace k_canvas
             void PolygonBezier(const kPoint *points, size_t count, const kPenBase *pen, const kBrushBase *brush) override;
 
             void DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush) override;
+            void DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush, const kTransform &transform) override;
             void DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha) override;
 
             void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) override;

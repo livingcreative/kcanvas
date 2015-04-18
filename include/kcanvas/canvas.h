@@ -152,6 +152,10 @@ namespace k_canvas
         kGradient(const kGradientStop *stops, size_t count, kExtendType extend = kExtendType::Clamp);
         ~kGradient();
 
+    private:
+        // copy constructor (gradient can't be copied)
+        kGradient(const kGradient &source) {}
+
     protected:
         impl::kGradientImpl *p_impl; // gradient object implementation
     };
@@ -189,6 +193,8 @@ namespace k_canvas
         kPen(const kColor &color, kScalar width, const kStroke *stroke);
         // general pen creation based on kBrush object and kStroke properties object
         kPen(const kBrush &brush, kScalar width, const kStroke *stroke);
+        // copy constructor
+        kPen(const kPen &source);
         ~kPen();
     };
 
@@ -241,6 +247,8 @@ namespace k_canvas
         kBrush(const kPoint &center, const kPoint &offset, const kSize &radius, const kGradient &gradient);
         // bitmap brush creation based on kBitmap object
         kBrush(kExtendType xextend, kExtendType yextend, const kBitmap *bitmap);
+        // copy constructor
+        kBrush(const kBrush &source);
         ~kBrush();
     };
 
@@ -266,6 +274,8 @@ namespace k_canvas
         kFont();
         // create font with desired properties
         kFont(const char *facename, kScalar size, uint32_t style = 0);
+        // copy constructor
+        //kFont(const kFont &source);
         ~kFont();
     };
 
@@ -338,10 +348,15 @@ namespace k_canvas
         friend class kCanvas;
 
     public:
+        // Empty path constructor, created path should be constructed
+        // with path construction commands and commited before use
         kPath();
+        // Create transformed copy of a source path. Path created in
+        // commited state
+        kPath(const kPath &source, const kTransform &transform);
         ~kPath();
 
-        // current path drawing interface
+        // current path construction interface
         // these calls are used to build current path
         void MoveTo(const kPoint &point);
         void LineTo(const kPoint &point);
@@ -355,6 +370,10 @@ namespace k_canvas
         // path clear & commit
         void Clear();
         void Commit();
+
+    private:
+        // copy constructor (path can not be copied)
+        kPath(const kPath &source) {}
 
     protected:
         impl::kPathImpl *p_impl; // path object implementation
@@ -400,6 +419,10 @@ namespace k_canvas
         kBitmapFormat format() const { return p_format; }
 
         void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, void *data);
+
+    private:
+        // copy constructor (bitmap can not be copied)
+        kBitmap(const kBitmap &source) {}
 
     protected:
         impl::kBitmapImpl *p_impl;
@@ -493,6 +516,8 @@ namespace k_canvas
 
         // object drawing
         void DrawPath(const kPath *path, const kPen *pen, const kBrush *brush);
+        void DrawPath(const kPath *path, const kPen *pen, const kBrush *brush, const kPoint &offset);
+        void DrawPath(const kPath *path, const kPen *pen, const kBrush *brush, const kTransform &transform);
         void DrawBitmap(const kBitmap *bitmap, const kPoint &origin, kScalar sourcealpha = 1.0f);
         void DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kPoint &source, const kSize &size, kScalar sourcealpha = 1.0f);
         void DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha = 1.0f);

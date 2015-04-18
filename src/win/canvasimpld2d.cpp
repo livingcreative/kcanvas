@@ -89,6 +89,18 @@ static inline D2D1_COLOR_F c2c(const kColor &color)
     return clr;
 }
 
+static inline D2D1_MATRIX_3X2_F t2t(const kTransform &transform)
+{
+    D2D1_MATRIX_3X2_F m;
+    m._11 = transform.m00;
+    m._12 = transform.m01;
+    m._21 = transform.m10;
+    m._22 = transform.m11;
+    m._31 = transform.m20;
+    m._32 = transform.m21;
+    return m;
+}
+
 static inline float PointSizeToFontSize(float size)
 {
     return size * (1.0f / 72.0f * 96.0f);
@@ -147,12 +159,12 @@ void kGradientImplD2D::Initialize(const kGradientStop *stops, size_t count, kExt
 
 
 kPathImplD2D::kPathImplD2D() :
+    p_path(nullptr),
     p_sink(nullptr),
     p_opened(false)
 {
     p_cp.x = 0;
     p_cp.y = 0;
-    P_F->CreatePathGeometry(&p_path);
 }
 
 kPathImplD2D::~kPathImplD2D()
@@ -293,7 +305,9 @@ void kPathImplD2D::Clear()
 {
     CloseSink();
     p_path->Release();
-    P_F->CreatePathGeometry(&p_path);
+    ID2D1PathGeometry *path;
+    P_F->CreatePathGeometry(&path);
+    p_path = path;
 }
 
 void kPathImplD2D::Commit()
@@ -301,16 +315,33 @@ void kPathImplD2D::Commit()
     CloseSink();
 }
 
+void kPathImplD2D::FromPath(const kPathImpl *source, const kTransform &transform)
+{
+    p_path = static_cast<const kPathImplD2D*>(source)->MakeTransformedPath(t2t(transform));
+}
+
+ID2D1Geometry* kPathImplD2D::MakeTransformedPath(const D2D1_MATRIX_3X2_F &transform) const
+{
+    ID2D1TransformedGeometry *geometry;
+    P_F->CreateTransformedGeometry(p_path, transform, &geometry);
+    return geometry;
+}
+
 void kPathImplD2D::OpenSink()
 {
     if (!p_sink) {
-        p_path->Open(&p_sink);
+        ID2D1PathGeometry *path = nullptr;
+        if (!p_path) {
+            P_F->CreatePathGeometry(&path);
+            p_path = path;
+        }
+        path->Open(&p_sink);
         // TODO: think of adding fill mode to kcanvas API
         //p_sink->SetFillMode(D2D1_FILL_MODE_ALTERNATE);
         p_opened = false;
     }
 }
-void kPathImplD2D::CloseSink() const
+void kPathImplD2D::CloseSink()
 {
     if (p_sink) {
         CloseFigure(true);
@@ -329,7 +360,7 @@ void kPathImplD2D::OpenFigure()
     }
 }
 
-void kPathImplD2D::CloseFigure(bool opened) const
+void kPathImplD2D::CloseFigure(bool opened)
 {
     if (p_opened) {
         p_sink->EndFigure(opened ? D2D1_FIGURE_END_OPEN : D2D1_FIGURE_END_CLOSED);
@@ -540,16 +571,30 @@ void kCanvasImplD2D::PolygonBezier(const kPoint *points, size_t count, const kPe
 void kCanvasImplD2D::DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush)
 {
     const kPathImplD2D *p = reinterpret_cast<const kPathImplD2D*>(path);
-    // TODO: path commitment should be checked inside kCanvas implementation
-    p->CloseSink();
-    
+
     if (brush_not_empty) {
         P_RT->FillGeometry(p->p_path, _brush);
     }
-    
+
     if (pen_not_empty) {
         P_RT->DrawGeometry(p->p_path, _pen);
     }
+}
+
+void kCanvasImplD2D::DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush, const kTransform &transform)
+{
+    const kPathImplD2D *p = reinterpret_cast<const kPathImplD2D*>(path);
+    ID2D1Geometry *tp = p->MakeTransformedPath(t2t(transform));
+
+    if (brush_not_empty) {
+        P_RT->FillGeometry(tp, _brush);
+    }
+
+    if (pen_not_empty) {
+        P_RT->DrawGeometry(tp, _pen);
+    }
+
+    tp->Release();
 }
 
 void kCanvasImplD2D::DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, float sourcealpha)

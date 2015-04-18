@@ -130,6 +130,17 @@ kPen::kPen(const kBrush &brush, kScalar width, const kStroke *stroke)
     p_data.p_stroke = stroke->getResource();
 }
 
+kPen::kPen(const kPen &source) :
+    kPenBase(source)
+{
+    if (source.p_data.p_brush) {
+        p_data.p_brush->addref();
+    }
+    if (source.p_data.p_stroke) {
+        p_data.p_stroke->addref();
+    }
+}
+
 kPen::~kPen()
 {
     ReleaseResource(p_data.p_brush);
@@ -189,6 +200,17 @@ kBrush::kBrush(kExtendType xextend, kExtendType yextend, const kBitmap *bitmap)
     p_data.p_bitmap->addref();
 }
 
+kBrush::kBrush(const kBrush &source) :
+    kBrushBase(source)
+{
+    if (source.p_data.p_gradient) {
+        p_data.p_gradient->addref();
+    }
+    if (source.p_data.p_bitmap) {
+        p_data.p_bitmap->addref();
+    }
+}
+
 kBrush::~kBrush()
 {
     ReleaseResource(p_data.p_gradient);
@@ -209,11 +231,15 @@ kFont::kFont()
 
 kFont::kFont(const char *facename, kScalar size, uint32_t style)
 {
-    strncpy(p_data.p_facename, facename, 32);
-    p_data.p_facename[31] = 0;
+    strncpy(p_data.p_facename, facename, MAX_FONT_FACE_LENGTH);
+    p_data.p_facename[MAX_FONT_FACE_LENGTH - 1] = 0;
     p_data.p_size = size;
     p_data.p_style = style;
 }
+
+//kFont::kFont(const kFont &source) :
+//    kFontBase(source)
+//{}
 
 kFont::~kFont()
 {}
@@ -236,7 +262,7 @@ static void ArcToBezierPoints(const kRect &rect, kScalar start, kScalar end, kPo
     vec rk = vec(kScalar(1.0), k);
 
     kScalar angle = end - start;
-    kScalar sgn =  sign(angle);
+    kScalar sgn = sign(angle);
     angle = abs(angle);
 
     mat m;
@@ -255,7 +281,7 @@ static void ArcToBezierPoints(const kRect &rect, kScalar start, kScalar end, kPo
         cp = cur * rk + vec(-cur.y, cur.x) * rk * k;
         points[count++] = kPoint(cp) + center;
 
-        m.rotate(seg_angle * sgn);
+        m.rotate(-seg_angle * sgn);
         cur = m * cur;
         cp = cur * rk + vec(cur.y, -cur.x) * rk * k;
         points[count++] = kPoint(cp) + center;
@@ -280,6 +306,12 @@ static void ArcToBezierPoints(const kRect &rect, kScalar start, kScalar end, kPo
 kPath::kPath() :
     p_impl(CanvasFactory::CreatePath())
 {}
+
+kPath::kPath(const kPath &source, const kTransform &transform) :
+    p_impl(CanvasFactory::CreatePath())
+{
+    p_impl->FromPath(source.p_impl, transform);
+}
 
 kPath::~kPath()
 {
@@ -496,6 +528,19 @@ void kCanvas::DrawPath(const kPath *path, const kPen *pen, const kBrush *brush)
 {
     needResources(pen, brush);
     p_impl->DrawPath(path->p_impl, pen, brush);
+}
+
+void kCanvas::DrawPath(const kPath *path, const kPen *pen, const kBrush *brush, const kPoint &offset)
+{
+    kTransform tfm;
+    tfm.translate(offset.x, offset.y);
+    DrawPath(path, pen, brush, tfm);
+}
+
+void kCanvas::DrawPath(const kPath *path, const kPen *pen, const kBrush *brush, const kTransform &transform)
+{
+    needResources(pen, brush);
+    p_impl->DrawPath(path->p_impl, pen, brush, transform);
 }
 
 void kCanvas::DrawBitmap(const kBitmap *bitmap, const kPoint &origin, kScalar sourcealpha)
