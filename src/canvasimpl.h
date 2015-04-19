@@ -238,7 +238,7 @@ namespace k_canvas
             static Impl           current_impl;
         };
 
-
+        /*
         template <typename Tdata, typename Tallocator, typename Tres>
         class ResourceManager
         {
@@ -359,7 +359,7 @@ namespace k_canvas
             }
             p_resources.clear();
         }
-
+        */
 #ifdef _DEBUG
         //extern int dbg_resource_count;
 #endif
