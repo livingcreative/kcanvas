@@ -390,6 +390,18 @@ kBitmapImplD2D::~kBitmapImplD2D()
     SafeRelease(p_bitmap);
 }
 
+static const DXGI_FORMAT bitmapformats[3] = {
+    DXGI_FORMAT_UNKNOWN,
+    DXGI_FORMAT_B8G8R8A8_UNORM,
+    DXGI_FORMAT_A8_UNORM
+};
+
+static const D2D1_ALPHA_MODE alfamodes[3] = {
+    D2D1_ALPHA_MODE_UNKNOWN,
+    D2D1_ALPHA_MODE_PREMULTIPLIED,
+    D2D1_ALPHA_MODE_STRAIGHT
+};
+
 void kBitmapImplD2D::Initialize(size_t width, size_t height, kBitmapFormat format)
 {
     D2D1_SIZE_U sz;
@@ -399,8 +411,8 @@ void kBitmapImplD2D::Initialize(size_t width, size_t height, kBitmapFormat forma
     D2D1_BITMAP_PROPERTIES props;
     props.dpiX = 0;
     props.dpiY = 0;
-    props.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    props.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+    props.pixelFormat.format = bitmapformats[size_t(format)];
+    props.pixelFormat.alphaMode = alfamodes[size_t(format)];
 
     P_RT->CreateBitmap(sz, nullptr, 0, props, &p_bitmap);
 }
@@ -428,7 +440,9 @@ void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceform
 */
 
 kCanvasImplD2D::kCanvasImplD2D(const CanvasFactory *factory) :
-    boundDC(0)
+    boundDC(0),
+    maskBrush(nullptr),
+    maskLayer(nullptr)
 {}
 
 kCanvasImplD2D::~kCanvasImplD2D()
@@ -478,6 +492,7 @@ bool kCanvasImplD2D::BindToContext(kContext context)
 bool kCanvasImplD2D::Unbind()
 {
     if (boundDC) {
+        SetMask(nullptr);
         P_RT->EndDraw();
         boundDC = 0;
         return true;
@@ -618,6 +633,22 @@ void kCanvasImplD2D::DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin,
         D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
         r2rD2D(kRect(source, sourcesize))
     );
+}
+
+void kCanvasImplD2D::DrawMask(const kBitmapImpl *mask, kBrushBase *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize)
+{
+    const kBitmapImplD2D *p = reinterpret_cast<const kBitmapImplD2D*>(mask);
+
+    D2D1_ANTIALIAS_MODE aa = P_RT->GetAntialiasMode();
+    P_RT->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
+
+    P_RT->FillOpacityMask(
+        p->p_bitmap, _brush,
+        D2D1_OPACITY_MASK_CONTENT_GRAPHICS,
+        r2rD2D(kRect(origin, destsize)), r2rD2D(kRect(source, sourcesize))
+    );
+
+    P_RT->SetAntialiasMode(aa);
 }
 
 void kCanvasImplD2D::GetFontMetrics(const kFontBase *font, kFontMetrics *metrics)
@@ -772,6 +803,40 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
             p2pD2D(p + kPoint(0, offset)), p2pD2D(kPoint(cp.x, p.y + offset)),
             _brush, m.strikethroughThickness * k
         );
+    }
+}
+
+void kCanvasImplD2D::SetMask(kBitmapImpl *mask)
+{
+    if (maskLayer) {
+        P_RT->PopLayer();
+        SafeRelease(maskLayer);
+        SafeRelease(maskBrush);
+    }
+
+    if (mask) {
+        // create bitmap brush for masking
+        D2D1_BITMAP_BRUSH_PROPERTIES brushprops;
+        brushprops.extendModeX = D2D1_EXTEND_MODE_WRAP;
+        brushprops.extendModeY = D2D1_EXTEND_MODE_WRAP;
+        brushprops.interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_LINEAR;
+        P_RT->CreateBitmapBrush(
+            static_cast<kBitmapImplD2D*>(mask)->p_bitmap,
+            brushprops, &maskBrush
+        );
+
+        // create mask layer
+        P_RT->CreateLayer(&maskLayer);
+
+        D2D1_LAYER_PARAMETERS layerprops;
+        layerprops.contentBounds = D2D1::InfiniteRect();
+        layerprops.geometricMask = nullptr;
+        layerprops.maskAntialiasMode = D2D1_ANTIALIAS_MODE_PER_PRIMITIVE;
+        layerprops.maskTransform = D2D1::IdentityMatrix();
+        layerprops.opacity = 1.0f;
+        layerprops.opacityBrush = maskBrush;
+        layerprops.layerOptions = D2D1_LAYER_OPTIONS_NONE;
+        P_RT->PushLayer(layerprops, maskLayer);
     }
 }
 

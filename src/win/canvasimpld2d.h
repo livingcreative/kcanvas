@@ -144,11 +144,14 @@ namespace k_canvas
             void DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush) override;
             void DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush, const kTransform &transform) override;
             void DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha) override;
+            void DrawMask(const kBitmapImpl *mask, kBrushBase *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize) override;
 
             void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) override;
             void GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics) override;
             kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) override;
             void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) override;
+
+            void SetMask(kBitmapImpl *mask) override;
 
         private:
             ID2D1PathGeometry* GeometryFromPoints(const kPoint *points, size_t count, bool closed);
@@ -156,6 +159,8 @@ namespace k_canvas
 
         private:
             HDC boundDC;
+            ID2D1BitmapBrush *maskBrush;
+            ID2D1Layer       *maskLayer;
         };
 
 

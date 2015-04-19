@@ -416,6 +416,7 @@ namespace k_canvas
 
         size_t width() const { return p_width; }
         size_t height() const { return p_height; }
+        kSize size() const { return kSize(kScalar(p_width), kScalar(p_height)); }
         kBitmapFormat format() const { return p_format; }
 
         void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, void *data);
@@ -521,6 +522,9 @@ namespace k_canvas
         void DrawBitmap(const kBitmap *bitmap, const kPoint &origin, kScalar sourcealpha = 1.0f);
         void DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kPoint &source, const kSize &size, kScalar sourcealpha = 1.0f);
         void DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha = 1.0f);
+        void DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin);
+        void DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin, const kPoint &source, const kSize &size);
+        void DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize);
 
         // simple text measuring and drawing 
         void GetFontMetrics(const kFont *font, kFontMetrics *metrics);
@@ -530,6 +534,7 @@ namespace k_canvas
         void Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties = nullptr);
 
         // masking
+        void SetMask(kBitmap *mask);
 
         // clipping
 

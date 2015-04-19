@@ -559,6 +559,31 @@ void kCanvas::DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kSiz
     p_impl->DrawBitmap(bitmap->p_impl, origin, destsize, source, sourcesize, sourcealpha);
 }
 
+void kCanvas::DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin)
+{
+    if (brush) {
+        brush->needResource();
+        kSize sz(kScalar(mask->width()), kScalar(mask->height()));
+        p_impl->DrawMask(mask->p_impl, brush, origin, sz, kPoint(), sz);
+    }
+}
+
+void kCanvas::DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin, const kPoint &source, const kSize &size)
+{
+    if (brush) {
+        brush->needResource();
+        p_impl->DrawMask(mask->p_impl, brush, origin, size, source, size);
+    }
+}
+
+void kCanvas::DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize)
+{
+    if (brush) {
+        brush->needResource();
+        p_impl->DrawMask(mask->p_impl, brush, origin, destsize, source, sourcesize);
+    }
+}
+
 void kCanvas::GetFontMetrics(const kFont *font, kFontMetrics *metrics)
 {
     p_impl->GetFontMetrics(font, metrics);
@@ -589,6 +614,11 @@ void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont *fo
 
 void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties)
 {
+}
+
+void kCanvas::SetMask(kBitmap *mask)
+{
+    p_impl->SetMask(mask ? mask->p_impl : nullptr);
 }
 
 
