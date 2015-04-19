@@ -22,6 +22,12 @@ using namespace impl;
 using namespace std;
 
 
+/*
+ -------------------------------------------------------------------------------
+ internal utility functions
+ -------------------------------------------------------------------------------
+*/
+
 static inline D2D1_POINT_2F p2pD2D(const kPoint &p)
 {
     D2D1_POINT_2F pt;
@@ -101,16 +107,21 @@ static inline D2D1_MATRIX_3X2_F t2t(const kTransform &transform)
     return m;
 }
 
+// Direct2D uses its own units for fornt size definition
+// this function converts font point units (1/72") to Direct2D font units
 static inline float PointSizeToFontSize(float size)
 {
     return size * (1.0f / 72.0f * 96.0f);
 }
 
+// Direct2D font and glyph metrics returned in "font design" units
+// this function converts font design units into pixel values
 static inline float PointSizeToDesignUnitsRatio(float size, float designunitsperem)
 {
     return PointSizeToFontSize(size) / designunitsperem;
 }
 
+// Just a COM interface safe release utility function template
 template <typename T>
 static inline void SafeRelease(T &object)
 {
@@ -121,6 +132,9 @@ static inline void SafeRelease(T &object)
 }
 
 
+// these are really ugly macros definitions to help access internal factory and resource
+// data
+// they should be changed to somewhat more reliable
 // TODO: getFactory() - is slow, think about speeding these methods
 #define P_RT static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_rt
 #define P_F static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_factory
@@ -136,6 +150,12 @@ static inline void SafeRelease(T &object)
 #define _font_size kCanvasImplD2D::resourceData<FontData>(font).p_size
 #define _font_style resourceData<FontData>(font).p_style
 
+
+/*
+ -------------------------------------------------------------------------------
+ kGradientImplD2D object implementation
+ -------------------------------------------------------------------------------
+*/
 
 kGradientImplD2D::kGradientImplD2D() :
     p_gradient(nullptr)
@@ -157,6 +177,12 @@ void kGradientImplD2D::Initialize(const kGradientStop *stops, size_t count, kExt
     delete[] gs;
 }
 
+
+/*
+ -------------------------------------------------------------------------------
+ kPathImplD2D object implementation
+ -------------------------------------------------------------------------------
+*/
 
 kPathImplD2D::kPathImplD2D() :
     p_path(nullptr),
@@ -369,6 +395,11 @@ void kPathImplD2D::CloseFigure(bool opened)
 }
 
 
+/*
+ -------------------------------------------------------------------------------
+ kBitmapImplD2D object implementation
+ -------------------------------------------------------------------------------
+*/
 
 kBitmapImplD2D::kBitmapImplD2D() :
     p_bitmap(nullptr)
@@ -410,6 +441,11 @@ void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceform
 }
 
 
+/*
+ -------------------------------------------------------------------------------
+ kCanvasImplD2D object implementation
+ -------------------------------------------------------------------------------
+*/
 
 kCanvasImplD2D::kCanvasImplD2D(const CanvasFactory *factory) :
     boundDC(0)
@@ -481,7 +517,7 @@ void kCanvasImplD2D::Bezier(const kPoint &p1, const kPoint &p2, const kPoint &p3
     if (pen_not_empty) {
         kPoint points[] = {p1, p2, p3, p4};
 
-        ID2D1PathGeometry *g = GeomteryFromPointsBezier(points, 4, false);
+        ID2D1PathGeometry *g = GeometryFromPointsBezier(points, 4, false);
         P_RT->DrawGeometry(g, _pen);
         g->Release();
     }
@@ -490,7 +526,7 @@ void kCanvasImplD2D::Bezier(const kPoint &p1, const kPoint &p2, const kPoint &p3
 void kCanvasImplD2D::PolyLine(const kPoint *points, size_t count, const kPenBase *pen)
 {
     if (pen_not_empty) {
-        ID2D1PathGeometry *g = GeomteryFromPoints(points, count, false);
+        ID2D1PathGeometry *g = GeometryFromPoints(points, count, false);
         P_RT->DrawGeometry(g, _pen);
         g->Release();
     }
@@ -499,7 +535,7 @@ void kCanvasImplD2D::PolyLine(const kPoint *points, size_t count, const kPenBase
 void kCanvasImplD2D::PolyBezier(const kPoint *points, size_t count, const kPenBase *pen)
 {
     if (pen_not_empty) {
-        ID2D1PathGeometry *g = GeomteryFromPointsBezier(points, count, false);
+        ID2D1PathGeometry *g = GeometryFromPointsBezier(points, count, false);
         P_RT->DrawGeometry(g, _pen);
         g->Release();
     }
@@ -512,11 +548,6 @@ void kCanvasImplD2D::Rectangle(const kRect &rect, const kPenBase *pen, const kBr
     }
     if (pen_not_empty) {
         P_RT->DrawRectangle(r2rD2D(rect, _pen_width), _pen);
-
-        ID2D1StrokeStyle *stroke = reinterpret_cast<ID2D1StrokeStyle*>(native(pen)[kD2DPen::RESOURCE_STYLE]);
-        stroke->AddRef();
-        UINT count = stroke->Release();
-        int z = count;
     }
 }
 
@@ -542,7 +573,7 @@ void kCanvasImplD2D::Ellipse(const kRect &rect, const kPenBase *pen, const kBrus
 
 void kCanvasImplD2D::Polygon(const kPoint *points, size_t count, const kPenBase *pen, const kBrushBase *brush)
 {
-    ID2D1PathGeometry *g = GeomteryFromPoints(points, count, true);
+    ID2D1PathGeometry *g = GeometryFromPoints(points, count, true);
 
     if (brush_not_empty) {
         P_RT->FillGeometry(g, _brush);
@@ -556,7 +587,7 @@ void kCanvasImplD2D::Polygon(const kPoint *points, size_t count, const kPenBase 
 
 void kCanvasImplD2D::PolygonBezier(const kPoint *points, size_t count, const kPenBase *pen, const kBrushBase *brush)
 {
-    ID2D1PathGeometry *g = GeomteryFromPointsBezier(points, count, true);
+    ID2D1PathGeometry *g = GeometryFromPointsBezier(points, count, true);
 
     if (brush_not_empty) {
         P_RT->FillGeometry(g, _brush);
@@ -764,7 +795,7 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
     }
 }
 
-ID2D1PathGeometry* kCanvasImplD2D::GeomteryFromPoints(const kPoint *points, size_t count, bool closed)
+ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPoints(const kPoint *points, size_t count, bool closed)
 {
     ID2D1PathGeometry *g;
     ID2D1GeometrySink *sink;
@@ -792,7 +823,7 @@ ID2D1PathGeometry* kCanvasImplD2D::GeomteryFromPoints(const kPoint *points, size
     return g;
 }
 
-ID2D1PathGeometry* kCanvasImplD2D::GeomteryFromPointsBezier(const kPoint *points, size_t count, bool closed)
+ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPointsBezier(const kPoint *points, size_t count, bool closed)
 {
     ID2D1PathGeometry *g;
     ID2D1GeometrySink *sink;
@@ -833,6 +864,12 @@ ID2D1PathGeometry* kCanvasImplD2D::GeomteryFromPointsBezier(const kPoint *points
     return g;
 }
 
+
+/*
+ -------------------------------------------------------------------------------
+ kD2DStroke object implementation
+ -------------------------------------------------------------------------------
+*/
 
 static const D2D1_CAP_STYLE capstyles[3] = {
     D2D1_CAP_STYLE_FLAT,
@@ -923,7 +960,8 @@ kD2DStroke::kD2DStroke(const StrokeData &stroke)
     props.startCap = capstyles[size_t(stroke.p_startcap)];
     props.endCap = capstyles[size_t(stroke.p_endcap)];
     props.lineJoin = joinstyles[size_t(stroke.p_join)];
-    props.miterLimit = /*pen.p_width*/99.0; // TODO: check miter limit
+    // TODO: add miter limit property to kStroke
+    props.miterLimit = 99.0; 
 
     P_F->CreateStrokeStyle(props, dashes, dash_count, &p_strokestyle);
 }
@@ -936,6 +974,12 @@ kD2DStroke::~kD2DStroke()
     }
 }
 
+
+/*
+ -------------------------------------------------------------------------------
+ kD2DPen object implementation
+ -------------------------------------------------------------------------------
+*/
 
 kD2DPen::kD2DPen(const PenData &pen)
 {
@@ -958,6 +1002,12 @@ kD2DPen::~kD2DPen()
     SafeRelease(p_strokestyle);
 }
 
+
+/*
+ -------------------------------------------------------------------------------
+ kD2DBrush object implementation
+ -------------------------------------------------------------------------------
+*/
 
 kD2DBrush::kD2DBrush(const BrushData &brush) :
     p_brush(nullptr)
@@ -1032,6 +1082,12 @@ kD2DBrush::~kD2DBrush()
 }
 
 
+/*
+ -------------------------------------------------------------------------------
+ kD2DFont object implementation
+ -------------------------------------------------------------------------------
+*/
+
 kD2DFont::kD2DFont(const FontData &font)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
@@ -1043,7 +1099,8 @@ kD2DFont::kD2DFont(const FontData &font)
         font.p_style & kFontStyle::Bold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL,
         font.p_style & kFontStyle::Italic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL,
         DWRITE_FONT_STRETCH_NORMAL,
-        font.p_size / 72.0f * 96.0f,
+        PointSizeToFontSize(font.p_size),
+        // TODO: add font locale support, if needed
         L"",
         &format
     );
@@ -1074,67 +1131,70 @@ kD2DFont::~kD2DFont()
 }
 
 
+/*
+ -------------------------------------------------------------------------------
+ kD2DStrokeAllocator implementation
+ -------------------------------------------------------------------------------
+*/
+
 kD2DStroke* kD2DStrokeAllocator::createResource(const StrokeData &stroke)
 {
-    //OutputDebugStringA("PEN created\n");
     return new kD2DStroke(stroke);
 }
 
 void kD2DStrokeAllocator::deleteResource(kD2DStroke *stroke)
 {
-    //OutputDebugStringA("PEN destroyed\n");
     delete stroke;
 }
 
 
+/*
+ -------------------------------------------------------------------------------
+ kD2DPenAllocator implementation
+ -------------------------------------------------------------------------------
+*/
 
 kD2DPen* kD2DPenAllocator::createResource(const PenData &pen)
 {
-    //OutputDebugStringA("PEN created\n");
     return new kD2DPen(pen);
 }
 
 void kD2DPenAllocator::deleteResource(kD2DPen *pen)
 {
-    //OutputDebugStringA("PEN destroyed\n");
     delete pen;
 }
 
 
+/*
+ -------------------------------------------------------------------------------
+ kD2DBrushAllocator implementation
+ -------------------------------------------------------------------------------
+*/
+
 kD2DBrush* kD2DBrushAllocator::createResource(const BrushData &brush)
 {
-    //OutputDebugStringA("BRUSH created\n");
     return new kD2DBrush(brush);
 }
 
 void kD2DBrushAllocator::deleteResource(kD2DBrush *brush)
 {
-    //OutputDebugStringA("BRUSH destroyed\n");
     delete brush;
 }
 
-void kD2DBrushAllocator::adjustResource(kD2DBrush *resource, const BrushData &data)
-{
-    switch (data.p_style) {
-        case kBrushStyle::LinearGradient: {
-            ID2D1LinearGradientBrush *br = reinterpret_cast<ID2D1LinearGradientBrush*>(resource->getBrush());
-            br->SetStartPoint(p2pD2D(data.p_start));
-            br->SetEndPoint(p2pD2D(data.p_end));
-            break;
-        }
-    }
-}
 
+/*
+ -------------------------------------------------------------------------------
+ kD2DFontAllocator implementation
+ -------------------------------------------------------------------------------
+*/
 
 kD2DFont* kD2DFontAllocator::createResource(const FontData &font)
 {
-    //OutputDebugStringA("FONT created\n");
     return new kD2DFont(font);
 }
 
 void kD2DFontAllocator::deleteResource(kD2DFont *font)
 {
-    //OutputDebugStringA("FONT destroyed\n");
     delete font;
 }
 
@@ -1188,8 +1248,6 @@ CanvasFactoryD2D::CanvasFactoryD2D() :
 
         p_factory->CreateDCRenderTarget(&props, &p_rt);
         //p_rt->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
-
-        //TADMRendererD2D.FClipStack := TListByte.Create();
     }
 
     DWriteCreateFactoryPtr DWriteCreateFactory = DWriteCreateFactoryPtr(

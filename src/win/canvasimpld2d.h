@@ -151,8 +151,8 @@ namespace k_canvas
             void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) override;
 
         private:
-            ID2D1PathGeometry* GeomteryFromPoints(const kPoint *points, size_t count, bool closed);
-            ID2D1PathGeometry* GeomteryFromPointsBezier(const kPoint *points, size_t count, bool closed);
+            ID2D1PathGeometry* GeometryFromPoints(const kPoint *points, size_t count, bool closed);
+            ID2D1PathGeometry* GeometryFromPointsBezier(const kPoint *points, size_t count, bool closed);
 
         private:
             HDC boundDC;
@@ -176,8 +176,6 @@ namespace k_canvas
         public:
             kD2DStroke(const StrokeData &stroke);
             ~kD2DStroke() override;
-
-            ID2D1StrokeStyle* getStrokeStyle() const { return p_strokestyle; }
 
             void setupNativeResources(void **native) override
             {
@@ -207,10 +205,6 @@ namespace k_canvas
         public:
             kD2DPen(const PenData &pen);
             ~kD2DPen() override;
-
-            ID2D1Brush* getBrush() const { return p_brush; }
-            ID2D1StrokeStyle* getStrokeStyle() const { return p_strokestyle; }
-            float getWidth() const { return p_width; }
 
             void setupNativeResources(void **native) override
             {
@@ -297,7 +291,6 @@ namespace k_canvas
         public:
             static kD2DStroke* createResource(const StrokeData &stroke);
             static void deleteResource(kD2DStroke *stroke);
-            static void adjustResource(kD2DStroke *resource, const StrokeData &data) {}
         };
 
 
@@ -312,7 +305,6 @@ namespace k_canvas
         public:
             static kD2DPen* createResource(const PenData &pen);
             static void deleteResource(kD2DPen *pen);
-            static void adjustResource(kD2DPen *resource, const PenData &data) {}
         };
 
 
@@ -327,7 +319,6 @@ namespace k_canvas
         public:
             static kD2DBrush* createResource(const BrushData &brush);
             static void deleteResource(kD2DBrush *brush);
-            static void adjustResource(kD2DBrush *resource, const BrushData &data);
         };
 
 
@@ -342,7 +333,6 @@ namespace k_canvas
         public:
             static kD2DFont* createResource(const FontData &font);
             static void deleteResource(kD2DFont *font);
-            static void adjustResource(kD2DFont *resource, const FontData &data) {}
         };
 
 
