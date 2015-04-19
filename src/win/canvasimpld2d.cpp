@@ -275,7 +275,7 @@ void kPathImplD2D::Text(const char *text, int count, const kFontBase *font, kTex
             offsets[n].advanceOffset = p_cp.x;
             offsets[n].ascenderOffset = + originy - p_cp.y;
         }
-        _font_face->GetGlyphIndicesW(codepoints, curlen, indices);
+        _font_face->GetGlyphIndices(codepoints, curlen, indices);
 
         _font_face->GetDesignGlyphMetrics(indices, curlen, abc, FALSE);
         for (size_t n = 0; n < curlen; ++n) {
@@ -635,7 +635,7 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
     for (size_t n = first; n <= last; ++n) {
         // TODO: optimize for whole range
         UINT16 index = 0;
-        _font_face->GetGlyphIndicesW(&n, 1, &index);
+        _font_face->GetGlyphIndices(&n, 1, &index);
 
         DWRITE_GLYPH_METRICS abc;
         _font_face->GetDesignGlyphMetrics(&index, 1, &abc, FALSE);
@@ -677,7 +677,7 @@ kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *fon
         for (size_t n = 0; n < curlen; ++n) {
             codepoints[n] = t[n + pos];
         }
-        _font_face->GetGlyphIndicesW(codepoints, curlen, indices);
+        _font_face->GetGlyphIndices(codepoints, curlen, indices);
 
         _font_face->GetDesignGlyphMetrics(indices, curlen, abc, FALSE);
         for (size_t n = 0; n < curlen; ++n) {
@@ -732,7 +732,7 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
         for (size_t n = 0; n < curlen; ++n) {
             codepoints[n] = t[n + pos];
         }
-        _font_face->GetGlyphIndicesW(codepoints, curlen, indices);
+        _font_face->GetGlyphIndices(codepoints, curlen, indices);
 
         _font_face->GetDesignGlyphMetrics(indices, curlen, abc, run.isSideways);
         FLOAT advance = 0;
