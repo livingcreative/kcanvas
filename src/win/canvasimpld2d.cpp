@@ -36,18 +36,7 @@ static inline D2D1_POINT_2F p2pD2D(const kPoint &p)
     return pt;
 }
 
-static inline D2D1_RECT_F r2rD2D(const kRect &rect, kScalar pen_width)
-{
-    D2D1_RECT_F rc;
-    kScalar offset = 0.5f * (roundint(pen_width) & 1);
-    rc.left = rect.left + offset;
-    rc.top = rect.top + offset;
-    rc.right = rect.right - offset;
-    rc.bottom = rect.bottom - offset;
-    return rc;
-}
-
-static inline D2D1_RECT_F r2rD2D_fill(const kRect &rect)
+static inline D2D1_RECT_F r2rD2D(const kRect &rect)
 {
     D2D1_RECT_F rc;
     rc.left = rect.left;
@@ -57,19 +46,10 @@ static inline D2D1_RECT_F r2rD2D_fill(const kRect &rect)
     return rc;
 }
 
-static inline D2D1_ROUNDED_RECT rr2rD2D(const kRect &rect, const kSize &round, kScalar pen_width)
+static inline D2D1_ROUNDED_RECT rr2rD2D(const kRect &rect, const kSize &round)
 {
     D2D1_ROUNDED_RECT rc;
-    rc.rect = r2rD2D(rect, pen_width);
-    rc.radiusX = round.width;
-    rc.radiusY = round.height;
-    return rc;
-}
-
-static inline D2D1_ROUNDED_RECT rr2rD2D_fill(const kRect &rect, const kSize &round)
-{
-    D2D1_ROUNDED_RECT rc;
-    rc.rect = r2rD2D_fill(rect);
+    rc.rect = r2rD2D(rect);
     rc.radiusX = round.width;
     rc.radiusY = round.height;
     return rc;
@@ -544,20 +524,20 @@ void kCanvasImplD2D::PolyBezier(const kPoint *points, size_t count, const kPenBa
 void kCanvasImplD2D::Rectangle(const kRect &rect, const kPenBase *pen, const kBrushBase *brush)
 {
     if (brush_not_empty) {
-        P_RT->FillRectangle(r2rD2D_fill(rect), _brush);
+        P_RT->FillRectangle(r2rD2D(rect), _brush);
     }
     if (pen_not_empty) {
-        P_RT->DrawRectangle(r2rD2D(rect, _pen_width), _pen);
+        P_RT->DrawRectangle(r2rD2D(rect), _pen);
     }
 }
 
 void kCanvasImplD2D::RoundedRectangle(const kRect &rect, const kSize &round, const kPenBase *pen, const kBrushBase *brush)
 {
     if (brush_not_empty) {
-        P_RT->FillRoundedRectangle(rr2rD2D_fill(rect, round), _brush);
+        P_RT->FillRoundedRectangle(rr2rD2D(rect, round), _brush);
     }
     if (pen_not_empty) {
-        P_RT->DrawRoundedRectangle(rr2rD2D(rect, round, _pen_width), _pen);
+        P_RT->DrawRoundedRectangle(rr2rD2D(rect, round), _pen);
     }
 }
 
@@ -633,10 +613,10 @@ void kCanvasImplD2D::DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin,
     const kBitmapImplD2D *p = reinterpret_cast<const kBitmapImplD2D*>(bitmap);
     P_RT->DrawBitmap(
         p->p_bitmap,
-        r2rD2D_fill(kRect(origin, destsize)),
+        r2rD2D(kRect(origin, destsize)),
         sourcealpha,
         D2D1_BITMAP_INTERPOLATION_MODE_LINEAR,
-        r2rD2D_fill(kRect(source, sourcesize))
+        r2rD2D(kRect(source, sourcesize))
     );
 }
 
@@ -1247,7 +1227,7 @@ CanvasFactoryD2D::CanvasFactoryD2D() :
         props.usage = D2D1_RENDER_TARGET_USAGE_NONE;
 
         p_factory->CreateDCRenderTarget(&props, &p_rt);
-        //p_rt->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_CLEARTYPE);
+        p_rt->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
     }
 
     DWriteCreateFactoryPtr DWriteCreateFactory = DWriteCreateFactoryPtr(
