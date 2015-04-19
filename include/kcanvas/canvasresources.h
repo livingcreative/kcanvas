@@ -133,7 +133,10 @@ namespace k_canvas
             size_t release()
             {
                 if (--p_refcount == 0) {
-                    // 
+                    // in general every factory could define its own
+                    // way for resource allocation and destruction, so
+                    // simple delete operator isn't suitable and this
+                    // behaviour could be changed in future
                     delete this;
                     return 0;
                 }

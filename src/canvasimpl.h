@@ -380,7 +380,7 @@ namespace k_canvas
                 return allocator::createResource(data);\
             }\
         private:\
-            ResourceManager<name##Data, allocator, res> name##_manager;
+            //ResourceManager<name##Data, allocator, res> name##_manager;
 
 
         template <
@@ -406,9 +406,10 @@ namespace k_canvas
 
             void destroyResources() override
             {
-                Pen_manager.Clear();
-                Brush_manager.Clear();
-                Font_manager.Clear();
+                // resource managers disabled for now
+                //Pen_manager.Clear();
+                //Brush_manager.Clear();
+                //Font_manager.Clear();
             }
 
             FACTORY_RESOURCE_MANAGER(Stroke, Tstrokeallocator, Tstroke)
@@ -428,7 +429,6 @@ namespace k_canvas
                 implementation(impl_),
                 createproc(proc_)
             {}
-
 
             Impl                    implementation;
             CanvasFactoryCreateProc createproc;
