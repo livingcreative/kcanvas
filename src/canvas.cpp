@@ -616,9 +616,9 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
 {
 }
 
-void kCanvas::SetMask(kBitmap *mask)
+void kCanvas::SetMask(const kBitmap *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend)
 {
-    p_impl->SetMask(mask ? mask->p_impl : nullptr);
+    p_impl->SetMask(mask ? mask->p_impl : nullptr, transform, xextend, yextend);
 }
 
 

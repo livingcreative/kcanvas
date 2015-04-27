@@ -151,11 +151,12 @@ namespace k_canvas
             kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) override;
             void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) override;
 
-            void SetMask(kBitmapImpl *mask) override;
+            void SetMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) override;
 
         private:
             ID2D1PathGeometry* GeometryFromPoints(const kPoint *points, size_t count, bool closed);
             ID2D1PathGeometry* GeometryFromPointsBezier(const kPoint *points, size_t count, bool closed);
+            void ClearMask();
 
         private:
             HDC boundDC;

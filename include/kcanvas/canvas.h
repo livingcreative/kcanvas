@@ -534,7 +534,7 @@ namespace k_canvas
         void Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties = nullptr);
 
         // masking
-        void SetMask(kBitmap *mask);
+        void SetMask(const kBitmap *mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp);
 
         // clipping
 

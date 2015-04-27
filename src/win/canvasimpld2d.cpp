@@ -112,6 +112,24 @@ static inline void SafeRelease(T &object)
 }
 
 
+static const D2D1_CAP_STYLE capstyles[3] = {
+    D2D1_CAP_STYLE_FLAT,
+    D2D1_CAP_STYLE_SQUARE,
+    D2D1_CAP_STYLE_ROUND
+};
+
+static const D2D1_LINE_JOIN joinstyles[3] = {
+    D2D1_LINE_JOIN_MITER,
+    D2D1_LINE_JOIN_BEVEL,
+    D2D1_LINE_JOIN_ROUND
+};
+
+const D2D1_EXTEND_MODE extendmodes[2] = {
+    D2D1_EXTEND_MODE_CLAMP,
+    D2D1_EXTEND_MODE_WRAP
+};
+
+
 // these are really ugly macros definitions to help access internal factory and resource
 // data
 // they should be changed to somewhat more reliable
@@ -492,7 +510,7 @@ bool kCanvasImplD2D::BindToContext(kContext context)
 bool kCanvasImplD2D::Unbind()
 {
     if (boundDC) {
-        SetMask(nullptr);
+        ClearMask();
         P_RT->EndDraw();
         boundDC = 0;
         return true;
@@ -806,22 +824,17 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
     }
 }
 
-void kCanvasImplD2D::SetMask(kBitmapImpl *mask)
+void kCanvasImplD2D::SetMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend)
 {
-    if (maskLayer) {
-        P_RT->PopLayer();
-        SafeRelease(maskLayer);
-        SafeRelease(maskBrush);
-    }
-
+    ClearMask();
     if (mask) {
         // create bitmap brush for masking
         D2D1_BITMAP_BRUSH_PROPERTIES brushprops;
-        brushprops.extendModeX = D2D1_EXTEND_MODE_WRAP;
-        brushprops.extendModeY = D2D1_EXTEND_MODE_WRAP;
+        brushprops.extendModeX = extendmodes[size_t(xextend)];
+        brushprops.extendModeY = extendmodes[size_t(yextend)];
         brushprops.interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_LINEAR;
         P_RT->CreateBitmapBrush(
-            static_cast<kBitmapImplD2D*>(mask)->p_bitmap,
+            static_cast<const kBitmapImplD2D*>(mask)->p_bitmap,
             brushprops, &maskBrush
         );
 
@@ -832,7 +845,7 @@ void kCanvasImplD2D::SetMask(kBitmapImpl *mask)
         layerprops.contentBounds = D2D1::InfiniteRect();
         layerprops.geometricMask = nullptr;
         layerprops.maskAntialiasMode = D2D1_ANTIALIAS_MODE_PER_PRIMITIVE;
-        layerprops.maskTransform = D2D1::IdentityMatrix();
+        layerprops.maskTransform = t2t(transform);
         layerprops.opacity = 1.0f;
         layerprops.opacityBrush = maskBrush;
         layerprops.layerOptions = D2D1_LAYER_OPTIONS_NONE;
@@ -909,24 +922,21 @@ ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPointsBezier(const kPoint *points
     return g;
 }
 
+void kCanvasImplD2D::ClearMask()
+{
+    if (maskLayer) {
+        P_RT->PopLayer();
+        SafeRelease(maskLayer);
+        SafeRelease(maskBrush);
+    }
+}
+
 
 /*
  -------------------------------------------------------------------------------
  kD2DStroke object implementation
  -------------------------------------------------------------------------------
 */
-
-static const D2D1_CAP_STYLE capstyles[3] = {
-    D2D1_CAP_STYLE_FLAT,
-    D2D1_CAP_STYLE_SQUARE,
-    D2D1_CAP_STYLE_ROUND
-};
-
-static const D2D1_LINE_JOIN joinstyles[3] = {
-    D2D1_LINE_JOIN_MITER,
-    D2D1_LINE_JOIN_BEVEL,
-    D2D1_LINE_JOIN_ROUND
-};
 
 kD2DStroke::kD2DStroke(const StrokeData &stroke)
 {
@@ -1102,14 +1112,9 @@ kD2DBrush::kD2DBrush(const BrushData &brush) :
         case kBrushStyle::Bitmap: {
             ID2D1Bitmap *bitmap = reinterpret_cast<kBitmapImplD2D*>(brush.p_bitmap)->p_bitmap;
 
-            const D2D1_EXTEND_MODE modes[2] = {
-                D2D1_EXTEND_MODE_CLAMP,
-                D2D1_EXTEND_MODE_WRAP
-            };
-
             D2D1_BITMAP_BRUSH_PROPERTIES p;
-            p.extendModeX = modes[size_t(brush.p_xextend)];
-            p.extendModeY = modes[size_t(brush.p_yextend)];
+            p.extendModeX = extendmodes[size_t(brush.p_xextend)];
+            p.extendModeY = extendmodes[size_t(brush.p_yextend)];
             p.interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_LINEAR;
 
             P_RT->CreateBitmapBrush(

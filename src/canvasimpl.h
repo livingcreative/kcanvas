@@ -171,7 +171,7 @@ namespace k_canvas
             virtual kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) = 0;
             virtual void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) = 0;
 
-            virtual void SetMask(kBitmapImpl *mask) = 0;
+            virtual void SetMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) = 0;
 
         protected:
             // access to resource data
