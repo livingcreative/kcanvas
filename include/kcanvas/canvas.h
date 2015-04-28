@@ -533,10 +533,11 @@ namespace k_canvas
         void Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush, kTextOrigin origin = kTextOrigin::Top);
         void Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties = nullptr);
 
-        // masking
-        void SetMask(const kBitmap *mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp);
-
-        // clipping
+        // masking & clipping
+        void BeginClippedDrawing(const kBitmap *mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp);
+        void BeginClippedDrawing(const kPath *clip, const kTransform &transform = kTransform());
+        void BeginClippedDrawing(const kRect &clip);
+        void EndClippedDrawing();
 
         // global initialization & finalization
         static bool Initialize(Impl implementation = IMPL_NONE);

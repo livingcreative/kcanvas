@@ -459,8 +459,7 @@ void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceform
 
 kCanvasImplD2D::kCanvasImplD2D(const CanvasFactory *factory) :
     boundDC(0),
-    maskBrush(nullptr),
-    maskLayer(nullptr)
+    clipStack()
 {}
 
 kCanvasImplD2D::~kCanvasImplD2D()
@@ -510,7 +509,10 @@ bool kCanvasImplD2D::BindToContext(kContext context)
 bool kCanvasImplD2D::Unbind()
 {
     if (boundDC) {
-        ClearMask();
+        while (clipStack.size()) {
+            EndClippedDrawing();
+        }
+
         P_RT->EndDraw();
         boundDC = 0;
         return true;
@@ -824,33 +826,79 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
     }
 }
 
-void kCanvasImplD2D::SetMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend)
+void kCanvasImplD2D::BeginClippedDrawingByMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend)
 {
-    ClearMask();
-    if (mask) {
-        // create bitmap brush for masking
-        D2D1_BITMAP_BRUSH_PROPERTIES brushprops;
-        brushprops.extendModeX = extendmodes[size_t(xextend)];
-        brushprops.extendModeY = extendmodes[size_t(yextend)];
-        brushprops.interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_LINEAR;
-        P_RT->CreateBitmapBrush(
-            static_cast<const kBitmapImplD2D*>(mask)->p_bitmap,
-            brushprops, &maskBrush
-        );
+    Clip masklayer;
 
-        // create mask layer
-        P_RT->CreateLayer(&maskLayer);
+    // create bitmap brush for masking
+    D2D1_BITMAP_BRUSH_PROPERTIES brushprops;
+    brushprops.extendModeX = extendmodes[size_t(xextend)];
+    brushprops.extendModeY = extendmodes[size_t(yextend)];
+    brushprops.interpolationMode = D2D1_BITMAP_INTERPOLATION_MODE_LINEAR;
+    P_RT->CreateBitmapBrush(
+        static_cast<const kBitmapImplD2D*>(mask)->p_bitmap,
+        brushprops, &masklayer.brush
+    );
+    masklayer.brush->SetTransform(t2t(transform));
 
-        D2D1_LAYER_PARAMETERS layerprops;
-        layerprops.contentBounds = D2D1::InfiniteRect();
-        layerprops.geometricMask = nullptr;
-        layerprops.maskAntialiasMode = D2D1_ANTIALIAS_MODE_PER_PRIMITIVE;
-        layerprops.maskTransform = t2t(transform);
-        layerprops.opacity = 1.0f;
-        layerprops.opacityBrush = maskBrush;
-        layerprops.layerOptions = D2D1_LAYER_OPTIONS_NONE;
-        P_RT->PushLayer(layerprops, maskLayer);
-    }
+    // create mask layer
+    P_RT->CreateLayer(&masklayer.layer);
+
+    D2D1_LAYER_PARAMETERS layerprops;
+    layerprops.contentBounds = D2D1::InfiniteRect();
+    layerprops.geometricMask = nullptr;
+    layerprops.maskAntialiasMode = D2D1_ANTIALIAS_MODE_PER_PRIMITIVE;
+    layerprops.maskTransform = D2D1::IdentityMatrix();
+    layerprops.opacity = 1.0f;
+    layerprops.opacityBrush = masklayer.brush;
+    layerprops.layerOptions = D2D1_LAYER_OPTIONS_NONE;
+    P_RT->PushLayer(layerprops, masklayer.layer);
+
+    clipStack.push_back(masklayer);
+}
+
+void kCanvasImplD2D::BeginClippedDrawingByPath(const kPathImpl *clip, const kTransform &transform)
+{
+    Clip cliplayer;
+    cliplayer.brush = nullptr;
+
+    // create mask layer
+    P_RT->CreateLayer(&cliplayer.layer);
+
+    D2D1_LAYER_PARAMETERS layerprops;
+    layerprops.contentBounds = D2D1::InfiniteRect();
+    layerprops.geometricMask = static_cast<const kPathImplD2D*>(clip)->p_path;
+    layerprops.maskAntialiasMode = D2D1_ANTIALIAS_MODE_PER_PRIMITIVE;
+    layerprops.maskTransform = t2t(transform);
+    layerprops.opacity = 1.0f;
+    layerprops.opacityBrush = nullptr;
+    layerprops.layerOptions = D2D1_LAYER_OPTIONS_NONE;
+    P_RT->PushLayer(layerprops, cliplayer.layer);
+
+    clipStack.push_back(cliplayer);
+}
+
+void kCanvasImplD2D::BeginClippedDrawingByRect(const kRect &clip)
+{
+    Clip cliplayer;
+    cliplayer.layer = nullptr;
+    cliplayer.brush = nullptr;
+
+    P_RT->PushAxisAlignedClip(r2rD2D(clip), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+
+    clipStack.push_back(cliplayer);
+}
+
+void kCanvasImplD2D::EndClippedDrawing()
+{
+    Clip &clip = clipStack.back();
+
+    clip.layer || clip.brush ? P_RT->PopLayer() : P_RT->PopAxisAlignedClip();
+
+    SafeRelease(clip.layer);
+    SafeRelease(clip.brush);
+
+    clipStack.pop_back();
 }
 
 ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPoints(const kPoint *points, size_t count, bool closed)
@@ -922,14 +970,6 @@ ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPointsBezier(const kPoint *points
     return g;
 }
 
-void kCanvasImplD2D::ClearMask()
-{
-    if (maskLayer) {
-        P_RT->PopLayer();
-        SafeRelease(maskLayer);
-        SafeRelease(maskBrush);
-    }
-}
 
 
 /*

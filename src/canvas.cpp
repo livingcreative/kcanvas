@@ -616,9 +616,24 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
 {
 }
 
-void kCanvas::SetMask(const kBitmap *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend)
+void kCanvas::BeginClippedDrawing(const kBitmap *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend)
 {
-    p_impl->SetMask(mask ? mask->p_impl : nullptr, transform, xextend, yextend);
+    p_impl->BeginClippedDrawingByMask(mask->p_impl, transform, xextend, yextend);
+}
+
+void kCanvas::BeginClippedDrawing(const kPath *clip, const kTransform &transform)
+{
+    p_impl->BeginClippedDrawingByPath(clip->p_impl, transform);
+}
+
+void kCanvas::BeginClippedDrawing(const kRect &clip)
+{
+    p_impl->BeginClippedDrawingByRect(clip);
+}
+
+void kCanvas::EndClippedDrawing()
+{
+    p_impl->EndClippedDrawing();
 }
 
 

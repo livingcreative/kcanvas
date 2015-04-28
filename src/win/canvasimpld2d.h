@@ -151,17 +151,24 @@ namespace k_canvas
             kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) override;
             void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) override;
 
-            void SetMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) override;
+            void BeginClippedDrawingByMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) override;
+            void BeginClippedDrawingByPath(const kPathImpl *clip, const kTransform &transform) override;
+            void BeginClippedDrawingByRect(const kRect &clip) override;
+            void EndClippedDrawing() override;
 
         private:
             ID2D1PathGeometry* GeometryFromPoints(const kPoint *points, size_t count, bool closed);
             ID2D1PathGeometry* GeometryFromPointsBezier(const kPoint *points, size_t count, bool closed);
-            void ClearMask();
 
         private:
-            HDC boundDC;
-            ID2D1BitmapBrush *maskBrush;
-            ID2D1Layer       *maskLayer;
+            struct Clip
+            {
+                ID2D1Layer       *layer;
+                ID2D1BitmapBrush *brush;
+            };
+
+            HDC               boundDC;
+            std::vector<Clip> clipStack;
         };
 
 

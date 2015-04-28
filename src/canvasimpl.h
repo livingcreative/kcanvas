@@ -171,7 +171,10 @@ namespace k_canvas
             virtual kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) = 0;
             virtual void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) = 0;
 
-            virtual void SetMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) = 0;
+            virtual void BeginClippedDrawingByMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) = 0;
+            virtual void BeginClippedDrawingByPath(const kPathImpl *clip, const kTransform &transform) = 0;
+            virtual void BeginClippedDrawingByRect(const kRect &clip) = 0;
+            virtual void EndClippedDrawing() = 0;
 
         protected:
             // access to resource data
