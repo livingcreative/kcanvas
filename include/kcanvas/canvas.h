@@ -408,6 +408,7 @@ namespace k_canvas
     class kBitmap
     {
         friend class kCanvas;
+        friend class kBitmapCanvas;
         friend class kBrush;
 
     public:

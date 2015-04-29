@@ -639,6 +639,24 @@ void kCanvas::EndClippedDrawing()
 
 /*
  -------------------------------------------------------------------------------
+ kBitmapCanvas implementation
+ -------------------------------------------------------------------------------
+*/
+
+kBitmapCanvas::kBitmapCanvas(const kBitmap *target) :
+    kCanvas()
+{
+    p_impl->BindToBitmap(target->p_impl);
+}
+
+kBitmapCanvas::~kBitmapCanvas()
+{
+    p_impl->Unbind();
+}
+
+
+/*
+ -------------------------------------------------------------------------------
  kContextCanvas implementation
  -------------------------------------------------------------------------------
 */

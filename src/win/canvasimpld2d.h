@@ -167,8 +167,11 @@ namespace k_canvas
                 ID2D1BitmapBrush *brush;
             };
 
-            HDC               boundDC;
-            std::vector<Clip> clipStack;
+            HDC                boundDC;
+            ID2D1Bitmap       *boundBitmap;
+            HGDIOBJ            prevBitmap;
+            void              *bitmapBits;
+            std::vector<Clip>  clipStack;
         };
 
 

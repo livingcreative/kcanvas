@@ -459,6 +459,7 @@ void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceform
 
 kCanvasImplD2D::kCanvasImplD2D(const CanvasFactory *factory) :
     boundDC(0),
+    boundBitmap(nullptr),
     clipStack()
 {}
 
@@ -469,7 +470,51 @@ kCanvasImplD2D::~kCanvasImplD2D()
 
 bool kCanvasImplD2D::BindToBitmap(const kBitmapImpl *target)
 {
-    return false;
+    if (boundDC) {
+        return false;
+    }
+
+    const kBitmapImplD2D *bitmap = static_cast<const kBitmapImplD2D*>(target);
+    boundBitmap = bitmap->p_bitmap;
+    boundBitmap->AddRef();
+
+    D2D1_SIZE_U size = boundBitmap->GetPixelSize();
+
+    boundDC = CreateCompatibleDC(0);
+
+    BITMAPINFOHEADER bmi = {};
+    bmi.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.biPlanes = 1;
+    bmi.biBitCount = 32;
+    bmi.biWidth = size.width;
+    bmi.biHeight = size.height;
+
+    HBITMAP targetBitmap = CreateDIBSection(
+        boundDC, reinterpret_cast<const BITMAPINFO*>(&bmi),
+        DIB_RGB_COLORS, &bitmapBits, 0, 0
+    );
+
+    prevBitmap = SelectObject(boundDC, HGDIOBJ(targetBitmap));
+
+    RECT rc;
+    rc.left = rc.top = 0;
+    rc.right = size.width;
+    rc.bottom = size.height;
+    P_RT->BindDC(boundDC, &rc);
+    P_RT->BeginDraw();
+
+    // windows bitmaps are bottom top oriented, it's better to swap Y axis
+    // for all the rendering to fast copy back from bitmap memory without
+    // additional flipping
+    D2D1_MATRIX_3X2_F flip = D2D1::IdentityMatrix();
+    flip._22 = -1;
+    flip._32 = size.height;
+    P_RT->SetTransform(flip);
+
+    // draw original contents of the bitmap to bound clean dc bitmap
+    P_RT->DrawBitmap(boundBitmap);
+
+    return true;
 }
 
 bool kCanvasImplD2D::BindToPrinter(kPrinter printer)
@@ -487,11 +532,11 @@ bool kCanvasImplD2D::BindToContext(kContext context)
 
     RECT rc;
     memset(&rc, 0, sizeof(RECT));
-    if (HWND wnd = WindowFromDC(HDC(context))) {
+    if (HWND wnd = WindowFromDC(boundDC)) {
         if (wnd != GetDesktopWindow()) {
             GetClientRect(wnd, &rc);
         }
-    } else if (HGDIOBJ hbm = GetCurrentObject(HDC(context), OBJ_BITMAP)) {
+    } else if (HGDIOBJ hbm = GetCurrentObject(boundDC, OBJ_BITMAP)) {
         BITMAP bm;
         memset(&bm, 0, sizeof(BITMAP));
         GetObject(hbm, sizeof(BITMAP), &bm);
@@ -500,7 +545,7 @@ bool kCanvasImplD2D::BindToContext(kContext context)
         rc.bottom = bm.bmHeight;
     }
 
-    P_RT->BindDC(HDC(context), &rc);
+    P_RT->BindDC(boundDC, &rc);
     P_RT->BeginDraw();
 
     return true;
@@ -514,6 +559,24 @@ bool kCanvasImplD2D::Unbind()
         }
 
         P_RT->EndDraw();
+
+        if (boundBitmap) {
+            // copy bitmap back to bound bitmap resource
+            D2D1_SIZE_U size = boundBitmap->GetPixelSize();
+            D2D1_RECT_U rect;
+            rect.left = rect.top = 0;
+            rect.right = size.width;
+            rect.bottom = size.height;
+            boundBitmap->CopyFromMemory(&rect, bitmapBits, size.width * 4);
+            SafeRelease(boundBitmap);
+
+            DeleteObject(SelectObject(boundDC, prevBitmap));
+            DeleteDC(boundDC);
+
+            // restore transform (cause global single RT used)
+            P_RT->SetTransform(D2D1::IdentityMatrix());
+        }
+
         boundDC = 0;
         return true;
     }
