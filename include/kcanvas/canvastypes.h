@@ -179,6 +179,8 @@ namespace k_canvas
         kScalar ascent;
         kScalar descent;
         kScalar height;
+        kScalar capheight;
+        kScalar xheight;
         kScalar linegap;
         kScalar underlinepos;
         kScalar underlinewidth;

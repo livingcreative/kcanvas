@@ -685,6 +685,8 @@ void kCanvasImplD2D::GetFontMetrics(const kFontBase *font, kFontMetrics *metrics
     metrics->underlinewidth = m.underlineThickness * k;
     metrics->strikethroughpos = m.strikethroughPosition * k;
     metrics->strikethroughwidth = m.strikethroughThickness * k;
+    metrics->capheight = m.capHeight * k;
+    metrics->xheight = m.xHeight * k;
 }
 
 void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics)
