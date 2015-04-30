@@ -818,7 +818,11 @@ kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *fon
         size_t curlen = umin(length - pos, BUFFER_LEN);
 
         for (size_t n = 0; n < curlen; ++n) {
-            codepoints[n] = t[n + pos];
+            wchar_t ch = t[n + pos];
+            if (ch == '\n' || ch == '\r') {
+                ch = ' ';
+            }
+            codepoints[n] = ch;
         }
         _font_face->GetGlyphIndices(codepoints, curlen, indices);
 
@@ -873,7 +877,11 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
         size_t curlen = umin(length - pos, BUFFER_LEN);
 
         for (size_t n = 0; n < curlen; ++n) {
-            codepoints[n] = t[n + pos];
+            wchar_t ch = t[n + pos];
+            if (ch == '\n' || ch == '\r') {
+                ch = ' ';
+            }
+            codepoints[n] = ch;
         }
         _font_face->GetGlyphIndices(codepoints, curlen, indices);
 
