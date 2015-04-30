@@ -558,12 +558,10 @@ bool kCanvasImplD2D::BindToContext(kContext context, const kRectInt *rect)
     P_RT->BindDC(boundDC, &rc);
     P_RT->BeginDraw();
 
-    if (rc.left != 0 || rc.top != 0) {
-        D2D1_MATRIX_3X2_F offset = D2D1::IdentityMatrix();
-        offset._31 = FLOAT(-rc.left);
-        offset._32 = FLOAT(-rc.top);
-        P_RT->SetTransform(offset);
-    }
+    D2D1_MATRIX_3X2_F offset = D2D1::IdentityMatrix();
+    offset._31 = FLOAT(-rc.left);
+    offset._32 = FLOAT(-rc.top);
+    P_RT->SetTransform(offset);
 
     return true;
 }
