@@ -416,18 +416,51 @@ void kBitmap::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, siz
 
 /*
  -------------------------------------------------------------------------------
- kCanvas implementation
+ kTextService implementation
  -------------------------------------------------------------------------------
 */
 
-kCanvas::kCanvas() :
+kTextService::kTextService() :
     p_impl(CanvasFactory::CreateCanvas())
 {}
 
-kCanvas::~kCanvas()
+kTextService::~kTextService()
 {
     delete p_impl;
 }
+
+void kTextService::GetFontMetrics(const kFont *font, kFontMetrics *metrics)
+{
+    if (font) {
+        font->needResource();
+        p_impl->GetFontMetrics(font, metrics);
+    }
+}
+
+void kTextService::GetGlyphMetrics(const kFont *font, size_t first, size_t last, kGlyphMetrics *metrics)
+{
+    if (font) {
+        font->needResource();
+        p_impl->GetGlyphMetrics(font, first, last, metrics);
+    }
+}
+
+kSize kTextService::TextSize(const char *text, int count, const kFont *font, kSize *bounds, const kTextSizeProperties *properties)
+{
+    if (font) {
+        font->needResource();
+        return p_impl->TextSize(text, count, font, bounds);
+    } else {
+        return kSize();
+    }
+}
+
+
+/*
+ -------------------------------------------------------------------------------
+ kCanvas implementation
+ -------------------------------------------------------------------------------
+*/
 
 bool kCanvas::Initialize(Impl implementation)
 {
@@ -582,21 +615,6 @@ void kCanvas::DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin,
         brush->needResource();
         p_impl->DrawMask(mask->p_impl, brush, origin, destsize, source, sourcesize);
     }
-}
-
-void kCanvas::GetFontMetrics(const kFont *font, kFontMetrics *metrics)
-{
-    p_impl->GetFontMetrics(font, metrics);
-}
-
-void kCanvas::GetGlyphMetrics(const kFont *font, size_t first, size_t last, kGlyphMetrics *metrics)
-{
-    p_impl->GetGlyphMetrics(font, first, last, metrics);
-}
-
-kSize kCanvas::TextSize(const char *text, int count, const kFont *font, kSize *bounds, const kTextSizeProperties *properties)
-{
-    return p_impl->TextSize(text, count, font, bounds);
 }
 
 void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush, kTextOrigin origin)

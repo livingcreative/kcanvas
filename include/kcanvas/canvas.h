@@ -436,6 +436,36 @@ namespace k_canvas
 
     /*
      -------------------------------------------------------------------------------
+     kTextService
+     -------------------------------------------------------------------------------
+        text service object
+        
+        defines interface for retrieving font metrics and text measuring
+
+        text measurement
+
+        GetFontMetrics       - retrieve basic font metrics
+            GetGlyphMetrics      - retrieve array of glyph metrics for glyph range
+            TextSize             - single or multiline text measurement
+    */
+    class kTextService
+    {
+    public:
+        kTextService();
+        ~kTextService();
+
+        // simple text measuring and drawing 
+        void GetFontMetrics(const kFont *font, kFontMetrics *metrics);
+        void GetGlyphMetrics(const kFont *font, size_t first, size_t last, kGlyphMetrics *metrics);
+        kSize TextSize(const char *text, int count, const kFont *font, kSize *bounds = nullptr, const kTextSizeProperties *properties = nullptr);
+
+    protected:
+        impl::kCanvasImpl *p_impl;
+    };
+
+
+    /*
+     -------------------------------------------------------------------------------
      kCanvas
      -------------------------------------------------------------------------------
         canvas object
@@ -479,29 +509,18 @@ namespace k_canvas
             DrawPath command draws kPath object
             DrawBitmap commands are used to draw kBitmap objects
 
-        text measurement and drawing
+        text drawing
             canvas provides only basic text drawing capabilities
             to draw complex formatted text one could use own implementation above
             basic text drawing functions
 
-            GetFontMetrics       - retrieve basic font metrics
-            GetGlyphMetrics      - retrieve array of glyph metrics for glyph range
-            TextSize             - single or multiline text measurement
             Text(kPoint p ...)   - render single line of text with specified font and brush
             Text(kRect rect ...) - render bounded multiline text
                 with optional alignment and clipping
     */
-    class kCanvas
+    class kCanvas : public kTextService
     {
     public:
-        // Default canvas instantiation doesn't allow drawing
-        // operations. Default canvas object can be used only for several
-        // non-drawing operations (such text measurement)
-        // For drawing operations to take effect one should instantiate specific
-        // canvas object (kBitmapCanvas, kContextCanvas, kPrinterCanvas)
-        kCanvas();
-        ~kCanvas();
-
         // quick draw calls of certain primitive types for non-closed outlines
         void Line(const kPoint &a, const kPoint &b, const kPen *pen);
         void Bezier(const kPoint &p1, const kPoint &p2, const kPoint &p3, const kPoint &p4, const kPen *pen);
@@ -527,10 +546,7 @@ namespace k_canvas
         void DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin, const kPoint &source, const kSize &size);
         void DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize);
 
-        // simple text measuring and drawing 
-        void GetFontMetrics(const kFont *font, kFontMetrics *metrics);
-        void GetGlyphMetrics(const kFont *font, size_t first, size_t last, kGlyphMetrics *metrics);
-        kSize TextSize(const char *text, int count, const kFont *font, kSize *bounds = nullptr, const kTextSizeProperties *properties = nullptr);
+        // simple text drawing 
         void Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush, kTextOrigin origin = kTextOrigin::Top);
         void Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties = nullptr);
 
@@ -545,10 +561,11 @@ namespace k_canvas
         static bool Shutdown();
 
     protected:
-        static inline void needResources(const kPen *pen, const kBrush *brush);
+        // Default canvas instantiation is not allowed
+        kCanvas() {}
+        ~kCanvas() {}
 
-    protected:
-        impl::kCanvasImpl *p_impl;
+        static inline void needResources(const kPen *pen, const kBrush *brush);
     };
 
 
