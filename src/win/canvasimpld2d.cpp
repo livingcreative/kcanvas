@@ -138,7 +138,7 @@ const D2D1_EXTEND_MODE extendmodes[2] = {
 #define P_F static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_factory
 #define P_DW static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_dwrite_factory
 
-#define pen_not_empty pen
+#define pen_not_empty pen && native(pen)[kD2DPen::RESOURCE_STYLE]
 #define brush_not_empty brush && resourceData<BrushData>(brush).p_style != kBrushStyle::Clear
 
 #define _pen reinterpret_cast<ID2D1Brush*>(native(pen)[kD2DPen::RESOURCE_BRUSH]), resourceData<PenData>(pen).p_width, reinterpret_cast<ID2D1StrokeStyle*>(native(pen)[kD2DPen::RESOURCE_STYLE])
@@ -1161,13 +1161,21 @@ kD2DPen::kD2DPen(const PenData &pen)
 {
     void *native[2];
 
-    pen.p_brush->setupNativeResources(native);
-    p_brush = reinterpret_cast<ID2D1Brush*>(native[0]);
-    p_brush->AddRef();
+    if (pen.p_brush) {
+        pen.p_brush->setupNativeResources(native);
+        p_brush = reinterpret_cast<ID2D1Brush*>(native[0]);
+        p_brush->AddRef();
+    } else {
+        p_brush = nullptr;
+    }
 
-    pen.p_stroke->setupNativeResources(native);
-    p_strokestyle = reinterpret_cast<ID2D1StrokeStyle*>(native[0]);
-    p_strokestyle->AddRef();
+    if (pen.p_stroke) {
+        pen.p_stroke->setupNativeResources(native);
+        p_strokestyle = reinterpret_cast<ID2D1StrokeStyle*>(native[0]);
+        p_strokestyle->AddRef();
+    } else {
+        p_strokestyle = nullptr;
+    }
 
     p_width = pen.p_width;
 }
