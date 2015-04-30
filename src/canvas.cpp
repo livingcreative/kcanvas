@@ -643,10 +643,10 @@ void kCanvas::EndClippedDrawing()
  -------------------------------------------------------------------------------
 */
 
-kBitmapCanvas::kBitmapCanvas(const kBitmap *target) :
+kBitmapCanvas::kBitmapCanvas(const kBitmap *target, const kRectInt *rect) :
     kCanvas()
 {
-    p_impl->BindToBitmap(target->p_impl);
+    p_impl->BindToBitmap(target->p_impl, rect);
 }
 
 kBitmapCanvas::~kBitmapCanvas()
@@ -661,10 +661,10 @@ kBitmapCanvas::~kBitmapCanvas()
  -------------------------------------------------------------------------------
 */
 
-kContextCanvas::kContextCanvas(kContext context) :
+kContextCanvas::kContextCanvas(kContext context, const kRectInt *rect) :
     kCanvas()
 {
-    p_impl->BindToContext(context);
+    p_impl->BindToContext(context, rect);
 }
 
 kContextCanvas::~kContextCanvas()

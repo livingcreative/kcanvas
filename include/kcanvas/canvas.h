@@ -561,7 +561,7 @@ namespace k_canvas
     class kBitmapCanvas : public kCanvas
     {
     public:
-        kBitmapCanvas(const kBitmap *target);
+        kBitmapCanvas(const kBitmap *target, const kRectInt *rect = nullptr);
         ~kBitmapCanvas();
     };
 
@@ -575,7 +575,7 @@ namespace k_canvas
     class kContextCanvas : public kCanvas
     {
     public:
-        kContextCanvas(kContext context);
+        kContextCanvas(kContext context, const kRectInt *rect = nullptr);
         ~kContextCanvas();
     };
 

@@ -468,7 +468,7 @@ kCanvasImplD2D::~kCanvasImplD2D()
     Unbind();
 }
 
-bool kCanvasImplD2D::BindToBitmap(const kBitmapImpl *target)
+bool kCanvasImplD2D::BindToBitmap(const kBitmapImpl *target, const kRectInt *rect)
 {
     if (boundDC) {
         return false;
@@ -479,6 +479,8 @@ bool kCanvasImplD2D::BindToBitmap(const kBitmapImpl *target)
     boundBitmap->AddRef();
 
     D2D1_SIZE_U size = boundBitmap->GetPixelSize();
+    kRectInt bitmaprect(0, 0, size.width, size.height);
+    renderRect = rect ? bitmaprect.intersectionwith(*rect) : bitmaprect;
 
     boundDC = CreateCompatibleDC(0);
 
@@ -486,8 +488,8 @@ bool kCanvasImplD2D::BindToBitmap(const kBitmapImpl *target)
     bmi.biSize = sizeof(BITMAPINFOHEADER);
     bmi.biPlanes = 1;
     bmi.biBitCount = 32;
-    bmi.biWidth = size.width;
-    bmi.biHeight = size.height;
+    bmi.biWidth = renderRect.width();
+    bmi.biHeight = renderRect.height();
 
     HBITMAP targetBitmap = CreateDIBSection(
         boundDC, reinterpret_cast<const BITMAPINFO*>(&bmi),
@@ -498,8 +500,8 @@ bool kCanvasImplD2D::BindToBitmap(const kBitmapImpl *target)
 
     RECT rc;
     rc.left = rc.top = 0;
-    rc.right = size.width;
-    rc.bottom = size.height;
+    rc.right = renderRect.width();
+    rc.bottom = renderRect.height();
     P_RT->BindDC(boundDC, &rc);
     P_RT->BeginDraw();
 
@@ -508,7 +510,8 @@ bool kCanvasImplD2D::BindToBitmap(const kBitmapImpl *target)
     // additional flipping
     D2D1_MATRIX_3X2_F flip = D2D1::IdentityMatrix();
     flip._22 = -1;
-    flip._32 = size.height;
+    flip._31 = FLOAT(-renderRect.left);
+    flip._32 = FLOAT(renderRect.height() + renderRect.top);
     P_RT->SetTransform(flip);
 
     // draw original contents of the bitmap to bound clean dc bitmap
@@ -522,7 +525,7 @@ bool kCanvasImplD2D::BindToPrinter(kPrinter printer)
     return false;
 }
 
-bool kCanvasImplD2D::BindToContext(kContext context)
+bool kCanvasImplD2D::BindToContext(kContext context, const kRectInt *rect)
 {
     if (boundDC) {
         return false;
@@ -531,22 +534,36 @@ bool kCanvasImplD2D::BindToContext(kContext context)
     boundDC = HDC(context);
 
     RECT rc;
-    memset(&rc, 0, sizeof(RECT));
-    if (HWND wnd = WindowFromDC(boundDC)) {
-        if (wnd != GetDesktopWindow()) {
-            GetClientRect(wnd, &rc);
+    if (rect) {
+        rc.left = rect->left;
+        rc.top = rect->top;
+        rc.right = rect->right;
+        rc.bottom = rect->bottom;
+    } else {
+        memset(&rc, 0, sizeof(RECT));
+        if (HWND wnd = WindowFromDC(boundDC)) {
+            if (wnd != GetDesktopWindow()) {
+                GetClientRect(wnd, &rc);
+            }
+        } else if (HGDIOBJ hbm = GetCurrentObject(boundDC, OBJ_BITMAP)) {
+            BITMAP bm;
+            memset(&bm, 0, sizeof(BITMAP));
+            GetObject(hbm, sizeof(BITMAP), &bm);
+            rc.left = rc.top = 0;
+            rc.right = bm.bmWidth;
+            rc.bottom = bm.bmHeight;
         }
-    } else if (HGDIOBJ hbm = GetCurrentObject(boundDC, OBJ_BITMAP)) {
-        BITMAP bm;
-        memset(&bm, 0, sizeof(BITMAP));
-        GetObject(hbm, sizeof(BITMAP), &bm);
-        rc.left = rc.top = 0;
-        rc.right = bm.bmWidth;
-        rc.bottom = bm.bmHeight;
     }
 
     P_RT->BindDC(boundDC, &rc);
     P_RT->BeginDraw();
+
+    if (rc.left != 0 || rc.top != 0) {
+        D2D1_MATRIX_3X2_F offset = D2D1::IdentityMatrix();
+        offset._31 = FLOAT(-rc.left);
+        offset._32 = FLOAT(-rc.top);
+        P_RT->SetTransform(offset);
+    }
 
     return true;
 }
@@ -564,10 +581,11 @@ bool kCanvasImplD2D::Unbind()
             // copy bitmap back to bound bitmap resource
             D2D1_SIZE_U size = boundBitmap->GetPixelSize();
             D2D1_RECT_U rect;
-            rect.left = rect.top = 0;
-            rect.right = size.width;
-            rect.bottom = size.height;
-            boundBitmap->CopyFromMemory(&rect, bitmapBits, size.width * 4);
+            rect.left = renderRect.left;
+            rect.top = renderRect.top;
+            rect.right = renderRect.right;
+            rect.bottom = renderRect.bottom;
+            boundBitmap->CopyFromMemory(&rect, bitmapBits, renderRect.width() * 4);
             SafeRelease(boundBitmap);
 
             DeleteObject(SelectObject(boundDC, prevBitmap));

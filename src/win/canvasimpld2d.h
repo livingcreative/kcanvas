@@ -125,8 +125,8 @@ namespace k_canvas
             kCanvasImplD2D(const CanvasFactory *factory);
             ~kCanvasImplD2D() override;
 
-            bool BindToBitmap(const kBitmapImpl *target) override;
-            bool BindToContext(kContext context) override;
+            bool BindToBitmap(const kBitmapImpl *target, const kRectInt *rect) override;
+            bool BindToContext(kContext context, const kRectInt *rect) override;
             bool BindToPrinter(kPrinter printer) override;
             bool Unbind() override;
 
@@ -171,6 +171,7 @@ namespace k_canvas
             ID2D1Bitmap       *boundBitmap;
             HGDIOBJ            prevBitmap;
             void              *bitmapBits;
+            kRectInt           renderRect;
             std::vector<Clip>  clipStack;
         };
 
