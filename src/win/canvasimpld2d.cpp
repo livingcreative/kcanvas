@@ -791,6 +791,23 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
     }
 }
 
+void kCanvasImplD2D::GetGlyphRunMetrics(
+    const wstring &t, size_t pos, size_t curlen, const kFontBase *font,
+    DWRITE_GLYPH_METRICS *abc, UINT32 *codepoints, UINT16 *indices
+)
+{
+    for (size_t n = 0; n < curlen; ++n) {
+        wchar_t ch = t[n + pos];
+        if (ch == '\n' || ch == '\r') {
+            ch = ' ';
+        }
+        codepoints[n] = ch;
+    }
+    _font_face->GetGlyphIndices(codepoints, curlen, indices);
+
+    _font_face->GetDesignGlyphMetrics(indices, curlen, abc, FALSE);
+}
+
 kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *font, kSize *bounds)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
@@ -817,16 +834,7 @@ kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *fon
     while (pos < length) {
         size_t curlen = umin(length - pos, BUFFER_LEN);
 
-        for (size_t n = 0; n < curlen; ++n) {
-            wchar_t ch = t[n + pos];
-            if (ch == '\n' || ch == '\r') {
-                ch = ' ';
-            }
-            codepoints[n] = ch;
-        }
-        _font_face->GetGlyphIndices(codepoints, curlen, indices);
-
-        _font_face->GetDesignGlyphMetrics(indices, curlen, abc, FALSE);
+        GetGlyphRunMetrics(t, pos, curlen, font, abc, codepoints, indices);
         for (size_t n = 0; n < curlen; ++n) {
             result.width += abc[n].advanceWidth * k;
         }
@@ -876,16 +884,8 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
     while (pos < length) {
         size_t curlen = umin(length - pos, BUFFER_LEN);
 
-        for (size_t n = 0; n < curlen; ++n) {
-            wchar_t ch = t[n + pos];
-            if (ch == '\n' || ch == '\r') {
-                ch = ' ';
-            }
-            codepoints[n] = ch;
-        }
-        _font_face->GetGlyphIndices(codepoints, curlen, indices);
-
-        _font_face->GetDesignGlyphMetrics(indices, curlen, abc, run.isSideways);
+        // TODO: pass isSideways
+        GetGlyphRunMetrics(t, pos, curlen, font, abc, codepoints, indices);
         FLOAT advance = 0;
         for (size_t n = 0; n < curlen; ++n) {
             advance += abc[n].advanceWidth * k;
