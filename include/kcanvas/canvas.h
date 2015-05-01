@@ -556,6 +556,11 @@ namespace k_canvas
         void BeginClippedDrawing(const kRect &clip);
         void EndClippedDrawing();
 
+        // transform
+        void SetTransform(const kTransform &transform);
+        void PushTransform(const kTransform &transform);
+        void PopTransform();
+
         // global initialization & finalization
         static bool Initialize(Impl implementation = IMPL_NONE);
         static bool Shutdown();
@@ -566,6 +571,9 @@ namespace k_canvas
         ~kCanvas() {}
 
         static inline void needResources(const kPen *pen, const kBrush *brush);
+
+    protected:
+        std::vector<kTransform> p_transform_stack;
     };
 
 

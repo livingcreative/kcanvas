@@ -176,6 +176,8 @@ namespace k_canvas
             virtual void BeginClippedDrawingByRect(const kRect &clip) = 0;
             virtual void EndClippedDrawing() = 0;
 
+            virtual void SetTransform(const kTransform &transform) = 0;
+
         protected:
             // access to resource data
             template <typename T, typename R>

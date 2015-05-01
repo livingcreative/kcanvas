@@ -460,7 +460,8 @@ void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceform
 kCanvasImplD2D::kCanvasImplD2D(const CanvasFactory *factory) :
     boundDC(0),
     boundBitmap(nullptr),
-    clipStack()
+    clipStack(),
+    origin()
 {}
 
 kCanvasImplD2D::~kCanvasImplD2D()
@@ -508,11 +509,12 @@ bool kCanvasImplD2D::BindToBitmap(const kBitmapImpl *target, const kRectInt *rec
     // windows bitmaps are bottom top oriented, it's better to swap Y axis
     // for all the rendering to fast copy back from bitmap memory without
     // additional flipping
-    D2D1_MATRIX_3X2_F flip = D2D1::IdentityMatrix();
-    flip._22 = -1;
-    flip._31 = FLOAT(-renderRect.left);
-    flip._32 = FLOAT(renderRect.height() + renderRect.top);
-    P_RT->SetTransform(flip);
+    origin.scale(1, -1);
+    origin.translateby(
+        kScalar(-renderRect.left),
+        kScalar(renderRect.height() + renderRect.top)
+    );
+    P_RT->SetTransform(t2t(origin));
 
     // draw original contents of the bitmap to bound clean dc bitmap
     P_RT->DrawBitmap(boundBitmap);
@@ -558,10 +560,8 @@ bool kCanvasImplD2D::BindToContext(kContext context, const kRectInt *rect)
     P_RT->BindDC(boundDC, &rc);
     P_RT->BeginDraw();
 
-    D2D1_MATRIX_3X2_F offset = D2D1::IdentityMatrix();
-    offset._31 = FLOAT(-rc.left);
-    offset._32 = FLOAT(-rc.top);
-    P_RT->SetTransform(offset);
+    origin.translate(kScalar(-rc.left), kScalar(-rc.top));
+    P_RT->SetTransform(t2t(origin));
 
     return true;
 }
@@ -590,7 +590,7 @@ bool kCanvasImplD2D::Unbind()
             DeleteDC(boundDC);
 
             // restore transform (cause global single RT used)
-            P_RT->SetTransform(D2D1::IdentityMatrix());
+            //P_RT->SetTransform(D2D1::IdentityMatrix());
         }
 
         boundDC = 0;
@@ -791,23 +791,6 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
     }
 }
 
-void kCanvasImplD2D::GetGlyphRunMetrics(
-    const wstring &t, size_t pos, size_t curlen, const kFontBase *font,
-    DWRITE_GLYPH_METRICS *abc, UINT32 *codepoints, UINT16 *indices
-)
-{
-    for (size_t n = 0; n < curlen; ++n) {
-        wchar_t ch = t[n + pos];
-        if (ch == '\n' || ch == '\r') {
-            ch = ' ';
-        }
-        codepoints[n] = ch;
-    }
-    _font_face->GetGlyphIndices(codepoints, curlen, indices);
-
-    _font_face->GetDesignGlyphMetrics(indices, curlen, abc, FALSE);
-}
-
 kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *font, kSize *bounds)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
@@ -990,6 +973,12 @@ void kCanvasImplD2D::EndClippedDrawing()
     clipStack.pop_back();
 }
 
+void kCanvasImplD2D::SetTransform(const kTransform &transform)
+{
+    // transform always should be combined with origin
+    P_RT->SetTransform(t2t(transform * origin));
+}
+
 ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPoints(const kPoint *points, size_t count, bool closed)
 {
     ID2D1PathGeometry *g;
@@ -1059,6 +1048,22 @@ ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPointsBezier(const kPoint *points
     return g;
 }
 
+void kCanvasImplD2D::GetGlyphRunMetrics(
+    const wstring &t, size_t pos, size_t curlen, const kFontBase *font,
+    DWRITE_GLYPH_METRICS *abc, UINT32 *codepoints, UINT16 *indices
+)
+{
+    for (size_t n = 0; n < curlen; ++n) {
+        wchar_t ch = t[n + pos];
+        if (ch == '\n' || ch == '\r') {
+            ch = ' ';
+        }
+        codepoints[n] = ch;
+    }
+    _font_face->GetGlyphIndices(codepoints, curlen, indices);
+
+    _font_face->GetDesignGlyphMetrics(indices, curlen, abc, FALSE);
+}
 
 
 /*

@@ -156,6 +156,8 @@ namespace k_canvas
             void BeginClippedDrawingByRect(const kRect &clip) override;
             void EndClippedDrawing() override;
 
+            void SetTransform(const kTransform &transform) override;
+
         private:
             ID2D1PathGeometry* GeometryFromPoints(const kPoint *points, size_t count, bool closed);
             ID2D1PathGeometry* GeometryFromPointsBezier(const kPoint *points, size_t count, bool closed);
@@ -177,6 +179,7 @@ namespace k_canvas
             void              *bitmapBits;
             kRectInt           renderRect;
             std::vector<Clip>  clipStack;
+            kTransform         origin;
         };
 
 
@@ -397,12 +400,15 @@ namespace k_canvas
             ~CanvasFactoryD2D() override;
 
         private:
-            HMODULE              p_d2d1_dll;
-            HMODULE              p_dwrite_dll;
+            HMODULE                  p_d2d1_dll;
+            HMODULE                  p_dwrite_dll;
 
-            ID2D1Factory        *p_factory;
-            IDWriteFactory      *p_dwrite_factory;
-            ID2D1DCRenderTarget *p_rt;
+            ID2D1Factory            *p_factory;
+            IDWriteFactory          *p_dwrite_factory;
+            ID2D1DCRenderTarget     *p_rt;
+
+            // TODO: implement handling of global transform
+            //std::vector<kTransform>  p_global_transforms;
         };
 
     } // namespace impl
