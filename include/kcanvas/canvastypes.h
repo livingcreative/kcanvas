@@ -139,10 +139,147 @@ namespace k_canvas
         static kColor fromHSL(kScalar hue, kScalar saturation, kScalar lightness);
 
         // predefined colors constant values
-        static const kColor Black;
-        static const kColor Gray;
-        static const kColor LtGray;
-        static const kColor White;
+        static const kColor Pink;               	//	255 192 203
+        static const kColor LightPink;          	//	255 182 193
+        static const kColor HotPink;            	//	255 105 180
+        static const kColor DeepPink;           	//	255  20 147
+        static const kColor PaleVioletRed;      	//	219 112 147
+        static const kColor MediumVioletRed;    	//	199  21 133
+        static const kColor LightSalmon;        	//	255 160 122
+        static const kColor Salmon;             	//	250 128 114
+        static const kColor DarkSalmon;         	//	233 150 122
+        static const kColor LightCoral;         	//	240 128 128
+        static const kColor IndianRed;          	//	205  92  92
+        static const kColor Crimson;            	//	220  20  60
+        static const kColor FireBrick;          	//	178  34  34
+        static const kColor DarkRed;            	//	139   0   0
+        static const kColor Red;                	//	255   0   0
+        static const kColor OrangeRed;          	//	255  69   0
+        static const kColor Tomato;             	//	255  99  71
+        static const kColor Coral;              	//	255 127  80
+        static const kColor DarkOrange;         	//	255 140   0
+        static const kColor Orange;             	//	255 165   0
+        static const kColor Yellow;             	//	255 255   0
+        static const kColor LightYellow;        	//	255 255 224
+        static const kColor LemonChiffon;       	//	255 250 205
+        static const kColor LightGoldenrodYellow;	//	250 250 210
+        static const kColor PapayaWhip;         	//	255 239 213
+        static const kColor Moccasin;           	//	255 228 181
+        static const kColor PeachPuff;          	//	255 218 185
+        static const kColor PaleGoldenrod;      	//	238 232 170
+        static const kColor Khaki;              	//	240 230 140
+        static const kColor DarkKhaki;          	//	189 183 107
+        static const kColor Gold;               	//	255 215   0
+        static const kColor Cornsilk;           	//	255 248 220
+        static const kColor BlanchedAlmond;     	//	255 235 205
+        static const kColor Bisque;             	//	255 228 196
+        static const kColor NavajoWhite;        	//	255 222 173
+        static const kColor Wheat;              	//	245 222 179
+        static const kColor BurlyWood;          	//	222 184 135
+        static const kColor Tan;                	//	210 180 140
+        static const kColor RosyBrown;          	//	188 143 143
+        static const kColor SandyBrown;         	//	244 164  96
+        static const kColor Goldenrod;          	//	218 165  32
+        static const kColor DarkGoldenrod;      	//	184 134  11
+        static const kColor Peru;               	//	205 133  63
+        static const kColor Chocolate;          	//	210 105  30
+        static const kColor SaddleBrown;        	//	139  69  19
+        static const kColor Sienna;             	//	160  82  45
+        static const kColor Brown;              	//	165  42  42
+        static const kColor Maroon;             	//	128   0   0
+        static const kColor DarkOliveGreen;     	//	 85 107  47
+        static const kColor Olive;              	//	128 128   0
+        static const kColor OliveDrab;          	//	107 142  35
+        static const kColor YellowGreen;        	//	154 205  50
+        static const kColor LimeGreen;          	//	 50 205  50
+        static const kColor Lime;               	//	  0 255   0
+        static const kColor LawnGreen;          	//	124 252   0
+        static const kColor Chartreuse;         	//	127 255   0
+        static const kColor GreenYellow;        	//	173 255  47
+        static const kColor SpringGreen;        	//	  0 255 127
+        static const kColor MediumSpringGreen;  	//	  0 250 154
+        static const kColor LightGreen;         	//	144 238 144
+        static const kColor PaleGreen;          	//	152 251 152
+        static const kColor DarkSeaGreen;       	//	143 188 143
+        static const kColor MediumSeaGreen;     	//	 60 179 113
+        static const kColor SeaGreen;           	//	 46 139  87
+        static const kColor ForestGreen;        	//	 34 139  34
+        static const kColor Green;              	//	  0 128   0
+        static const kColor DarkGreen;          	//	  0 100   0
+        static const kColor MediumAquamarine;   	//	102 205 170
+        static const kColor Aqua;               	//	  0 255 255
+        static const kColor Cyan;               	//	  0 255 255
+        static const kColor LightCyan;          	//	224 255 255
+        static const kColor PaleTurquoise;      	//	175 238 238
+        static const kColor Aquamarine;         	//	127 255 212
+        static const kColor Turquoise;          	//	 64 224 208
+        static const kColor MediumTurquoise;    	//	 72 209 204
+        static const kColor DarkTurquoise;      	//	  0 206 209
+        static const kColor LightSeaGreen;      	//	 32 178 170
+        static const kColor CadetBlue;          	//	 95 158 160
+        static const kColor DarkCyan;           	//	  0 139 139
+        static const kColor Teal;               	//	  0 128 128
+        static const kColor LightSteelBlue;     	//	176 196 222
+        static const kColor PowderBlue;         	//	176 224 230
+        static const kColor LightBlue;          	//	173 216 230
+        static const kColor SkyBlue;            	//	135 206 235
+        static const kColor LightSkyBlue;       	//	135 206 250
+        static const kColor DeepSkyBlue;        	//	  0 191 255
+        static const kColor DodgerBlue;         	//	 30 144 255
+        static const kColor CornflowerBlue;     	//	100 149 237
+        static const kColor SteelBlue;          	//	 70 130 180
+        static const kColor RoyalBlue;          	//	 65 105 225
+        static const kColor Blue;               	//	  0   0 255
+        static const kColor MediumBlue;         	//	  0   0 205
+        static const kColor DarkBlue;           	//	  0   0 139
+        static const kColor Navy;               	//	  0   0 128
+        static const kColor MidnightBlue;       	//	 25  25 112
+        static const kColor Lavender;           	//	230 230 250
+        static const kColor Thistle;            	//	216 191 216
+        static const kColor Plum;               	//	221 160 221
+        static const kColor Violet;             	//	238 130 238
+        static const kColor Orchid;             	//	218 112 214
+        static const kColor Fuchsia;            	//	255   0 255
+        static const kColor Magenta;            	//	255   0 255
+        static const kColor MediumOrchid;       	//	186  85 211
+        static const kColor MediumPurple;       	//	147 112 219
+        static const kColor BlueViolet;         	//	138  43 226
+        static const kColor DarkViolet;         	//	148   0 211
+        static const kColor DarkOrchid;         	//	153  50 204
+        static const kColor DarkMagenta;        	//	139   0 139
+        static const kColor Purple;             	//	128   0 128
+        static const kColor Indigo;             	//	 75   0 130
+        static const kColor DarkSlateBlue;      	//	 72  61 139
+        static const kColor RebeccaPurple;      	//	102  51 153
+        static const kColor SlateBlue;          	//	106  90 205
+        static const kColor MediumSlateBlue;    	//	123 104 238
+        static const kColor White;              	//	255 255 255
+        static const kColor Snow;               	//	255 250 250
+        static const kColor Honeydew;           	//	240 255 240
+        static const kColor MintCream;          	//	245 255 250
+        static const kColor Azure;              	//	240 255 255
+        static const kColor AliceBlue;          	//	240 248 255
+        static const kColor GhostWhite;         	//	248 248 255
+        static const kColor WhiteSmoke;         	//	245 245 245
+        static const kColor Seashell;           	//	255 245 238
+        static const kColor Beige;              	//	245 245 220
+        static const kColor OldLace;            	//	253 245 230
+        static const kColor FloralWhite;        	//	255 250 240
+        static const kColor Ivory;              	//	255 255 240
+        static const kColor AntiqueWhite;       	//	250 235 215
+        static const kColor Linen;              	//	250 240 230
+        static const kColor LavenderBlush;      	//	255 240 245
+        static const kColor MistyRose;          	//	255 228 225
+        static const kColor Gainsboro;          	//	220 220 220
+        static const kColor LightGrey;          	//	211 211 211
+        static const kColor Silver;             	//	192 192 192
+        static const kColor DarkGray;           	//	169 169 169
+        static const kColor Gray;               	//	128 128 128
+        static const kColor DimGray;            	//	105 105 105
+        static const kColor LightSlateGray;     	//	119 136 153
+        static const kColor SlateGray;          	//	112 128 144
+        static const kColor DarkSlateGray;      	//	 47  79  79
+        static const kColor Black;              	//	  0   0   0
     };
 
     // kColorReal
@@ -197,10 +334,20 @@ namespace k_canvas
 
     struct kTextSizeProperties
     {
+        bool    multiline;
+        bool    ignorelinebreaks;
+        bool    mergespaces;
+        kSize   bounds;
+        kScalar interval;
     };
 
     struct kTextOutProperties
     {
+        bool    multiline;
+        bool    ignorelinebreaks;
+        bool    mergespaces;
+        bool    ellipses;
+        kScalar interval;
     };
 
 
