@@ -28,6 +28,7 @@ set(SOURCES
 # Visual Studio specific defines and options
 if (MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	add_definitions(-D_USE_MATH_DEFINES)
 
 	set(CONFIGS
 		CMAKE_C_FLAGS_DEBUG
