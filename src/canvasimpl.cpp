@@ -89,7 +89,7 @@ void kPathImplDefault::Text(const char *text, int count, const kFontBase *font, 
         p_commands.resize(p_commands.size() + 16);
     }
 
-    p_commands[p_curr_command++] = Command(PC_TEXT, p_curr_text, 0, font);
+    p_commands[p_curr_command++] = Command(PC_TEXT, int(p_curr_text), 0, font);
 
     if (p_curr_text + 1 > p_text.size()) {
         p_text.resize(p_text.size() + 16);
@@ -119,7 +119,7 @@ void kPathImplDefault::AddCommand(CommandType command, size_t point_count)
         p_commands.resize(p_commands.size() + 16);
     }
 
-    p_commands[p_curr_command++] = Command(command, p_curr_point, point_count);
+    p_commands[p_curr_command++] = Command(command, int(p_curr_point), point_count);
 }
 
 void kPathImplDefault::AddPoint(const kPoint &point)

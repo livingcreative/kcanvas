@@ -171,7 +171,7 @@ void kGradientImplD2D::Initialize(const kGradientStop *stops, size_t count, kExt
         gs[n].color = c2c(stops[n].color);
         gs[n].position = stops[n].position;
     }
-    P_RT->CreateGradientStopCollection(gs, count, &p_gradient);
+    P_RT->CreateGradientStopCollection(gs, UINT32(count), &p_gradient);
     delete[] gs;
 }
 
@@ -227,12 +227,12 @@ void kPathImplD2D::PolyLineTo(const kPoint *points, size_t count)
 
     D2D1_POINT_2F cache[32];
     while (count) {
-        int cnt = min(count, 32);
-        for (int n = 0; n < cnt; n++) {
+        size_t cnt = min(count, 32);
+        for (size_t n = 0; n < cnt; n++) {
             cache[n] = p2pD2D(*points++);
         }
 
-        p_sink->AddLines(cache, cnt);
+        p_sink->AddLines(cache, UINT32(cnt));
         count -= cnt;
     }
 
@@ -245,18 +245,18 @@ void kPathImplD2D::PolyBezierTo(const kPoint *points, size_t count)
 
     size_t curr_pt = 0;
     while (curr_pt < count) {
-        int cnt = min(30, count - curr_pt) / 3;
+        size_t cnt = min(30, count - curr_pt) / 3;
         if (cnt == 0) {
             break;
         }
 
         D2D1_BEZIER_SEGMENT segments[10];
-        for (int n = 0; n < cnt; n++) {
+        for (size_t n = 0; n < cnt; n++) {
             segments[n].point1 = p2pD2D(points[curr_pt++]);
             segments[n].point2 = p2pD2D(points[curr_pt++]);
             segments[n].point3 = p2pD2D(points[curr_pt++]);
         }
-        p_sink->AddBeziers(segments, cnt);
+        p_sink->AddBeziers(segments, UINT32(cnt));
     }
 
     p_cp = p2pD2D(points[curr_pt - 1]);
@@ -299,15 +299,15 @@ void kPathImplD2D::Text(const char *text, int count, const kFontBase *font, kTex
             offsets[n].advanceOffset = p_cp.x;
             offsets[n].ascenderOffset = + originy - p_cp.y;
         }
-        _font_face->GetGlyphIndices(codepoints, curlen, indices);
+        _font_face->GetGlyphIndices(codepoints, UINT32(curlen), indices);
 
-        _font_face->GetDesignGlyphMetrics(indices, curlen, abc, FALSE);
+        _font_face->GetDesignGlyphMetrics(indices, UINT32(curlen), abc, FALSE);
         for (size_t n = 0; n < curlen; ++n) {
             p_cp.x += abc[n].advanceWidth * k;
         }
 
         _font_face->GetGlyphRunOutline(
-            fontEmSize, indices, nullptr, offsets, curlen,
+            fontEmSize, indices, nullptr, offsets, UINT32(curlen),
             FALSE, FALSE, p_sink
         );
 
@@ -328,10 +328,7 @@ void kPathImplD2D::Close()
 void kPathImplD2D::Clear()
 {
     CloseSink();
-    p_path->Release();
-    ID2D1PathGeometry *path;
-    P_F->CreatePathGeometry(&path);
-    p_path = path;
+    SafeRelease(p_path);
 }
 
 void kPathImplD2D::Commit()
@@ -423,8 +420,8 @@ static const D2D1_ALPHA_MODE alfamodes[3] = {
 void kBitmapImplD2D::Initialize(size_t width, size_t height, kBitmapFormat format)
 {
     D2D1_SIZE_U sz;
-    sz.width = width;
-    sz.height = height;
+    sz.width = UINT32(width);
+    sz.height = UINT32(height);
 
     D2D1_BITMAP_PROPERTIES props;
     props.dpiX = 0;
@@ -447,7 +444,7 @@ void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceform
     rect.top = update.top;
     rect.right = update.right;
     rect.bottom = update.bottom;
-    p_bitmap->CopyFromMemory(&rect, data, sourcepitch);
+    p_bitmap->CopyFromMemory(&rect, data, UINT32(sourcepitch));
 }
 
 
@@ -696,6 +693,9 @@ void kCanvasImplD2D::PolygonBezier(const kPoint *points, size_t count, const kPe
 void kCanvasImplD2D::DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush)
 {
     const kPathImplD2D *p = reinterpret_cast<const kPathImplD2D*>(path);
+    if (!p->p_path) {
+        return;
+    }
 
     if (brush_not_empty) {
         P_RT->FillGeometry(p->p_path, _brush);
@@ -709,6 +709,10 @@ void kCanvasImplD2D::DrawPath(const kPathImpl *path, const kPenBase *pen, const 
 void kCanvasImplD2D::DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush, const kTransform &transform)
 {
     const kPathImplD2D *p = reinterpret_cast<const kPathImplD2D*>(path);
+    if (!p->p_path) {
+        return;
+    }
+
     ID2D1Geometry *tp = p->MakeTransformedPath(t2t(transform));
 
     if (brush_not_empty) {
@@ -778,7 +782,8 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
     for (size_t n = first; n <= last; ++n) {
         // TODO: optimize for whole range
         UINT16 index = 0;
-        _font_face->GetGlyphIndices(&n, 1, &index);
+        UINT32 nn = UINT32(n);
+        _font_face->GetGlyphIndices(&nn, 1, &index);
 
         DWRITE_GLYPH_METRICS abc;
         _font_face->GetDesignGlyphMetrics(&index, 1, &abc, FALSE);
@@ -874,7 +879,7 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kF
             advance += abc[n].advanceWidth * k;
         }
 
-        run.glyphCount = curlen;
+        run.glyphCount = UINT32(curlen);
         P_RT->DrawGlyphRun(cp, &run, _brush);
         cp.x += advance;
 
@@ -990,13 +995,13 @@ ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPoints(const kPoint *points, size
 
     size_t curr_pt = 1;
     while (curr_pt < count) {
-        int cnt = min(32, count - curr_pt);
+        size_t cnt = min(32, count - curr_pt);
         D2D1_POINT_2F pts[32];
-        for (int n = 0; n < cnt; n++) {
+        for (size_t n = 0; n < cnt; n++) {
             pts[n] = p2pD2D(points[n + curr_pt]);
         }
         curr_pt += cnt;
-        sink->AddLines(pts, cnt);
+        sink->AddLines(pts, UINT32(cnt));
     }
 
     sink->EndFigure(closed ? D2D1_FIGURE_END_CLOSED : D2D1_FIGURE_END_OPEN);
@@ -1018,7 +1023,7 @@ ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPointsBezier(const kPoint *points
 
     size_t curr_pt = 1;
     while (curr_pt < count) {
-        int cnt = min(30, count - curr_pt) / 3;
+        size_t cnt = min(30, count - curr_pt) / 3;
         if (cnt == 0) {
             break;
         }
@@ -1029,7 +1034,7 @@ ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPointsBezier(const kPoint *points
             segments[n].point2 = p2pD2D(points[curr_pt++]);
             segments[n].point3 = p2pD2D(points[curr_pt++]);
         }
-        sink->AddBeziers(segments, cnt);
+        sink->AddBeziers(segments, UINT32(cnt));
     }
 
     if (closed && (count - curr_pt) == 2) {
@@ -1060,9 +1065,9 @@ void kCanvasImplD2D::GetGlyphRunMetrics(
         }
         codepoints[n] = ch;
     }
-    _font_face->GetGlyphIndices(codepoints, curlen, indices);
+    _font_face->GetGlyphIndices(codepoints, UINT32(curlen), indices);
 
-    _font_face->GetDesignGlyphMetrics(indices, curlen, abc, FALSE);
+    _font_face->GetDesignGlyphMetrics(indices, UINT32(curlen), abc, FALSE);
 }
 
 
@@ -1139,7 +1144,7 @@ kD2DStroke::kD2DStroke(const StrokeData &stroke)
                 strokepattern[n] = stroke.p_stroke[n];
             }
             dashes = strokepattern;
-            dash_count = stroke.p_count;
+            dash_count = UINT(stroke.p_count);
             break;
 
         default:
