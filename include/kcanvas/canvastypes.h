@@ -125,6 +125,7 @@ namespace k_canvas
         uint8_t r, g, b, a;
 
         inline kColor();
+        inline kColor(const kColor &source, uint8_t _a);
         inline kColor(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a = 255);
 
         inline kColor inverse() const;
@@ -357,6 +358,10 @@ namespace k_canvas
 
     kColor::kColor() :
         r(0), g(0), b(0), a(255)
+    {}
+
+    kColor::kColor(const kColor &source, uint8_t _a) :
+        r(source.r), g(source.g), b(source.b), a(_a)
     {}
 
     kColor::kColor(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a) :
