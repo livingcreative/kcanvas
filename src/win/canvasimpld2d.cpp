@@ -1029,7 +1029,7 @@ ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPointsBezier(const kPoint *points
         }
 
         D2D1_BEZIER_SEGMENT segments[10];
-        for (int n = 0; n < cnt; n++) {
+        for (size_t n = 0; n < cnt; n++) {
             segments[n].point1 = p2pD2D(points[curr_pt++]);
             segments[n].point2 = p2pD2D(points[curr_pt++]);
             segments[n].point3 = p2pD2D(points[curr_pt++]);

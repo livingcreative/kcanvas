@@ -14,7 +14,6 @@
 
 #include "canvas.h"
 #include "canvasimpl.h"
-#include "kcommon/c_geometry.h"
 
 
 using namespace k_canvas;
@@ -271,7 +270,7 @@ static void ArcToBezierPoints(const kRect &rect, kScalar start, kScalar end, kPo
     vec cur = m * vec(0, -radius);
 
     count = 0;
-    points[count++] = kPoint(cur) + center;
+    points[count++] = cur.topoint<vec::type>() + center;
 
     while (angle > 0) {
         kScalar seg_angle = umin(kScalar(89.9), angle);
@@ -279,14 +278,14 @@ static void ArcToBezierPoints(const kRect &rect, kScalar start, kScalar end, kPo
         vec cp;
 
         cp = cur * rk + vec(-cur.y, cur.x) * rk * k;
-        points[count++] = kPoint(cp) + center;
+        points[count++] = cp.topoint<vec::type>() + center;
 
         m.rotate(-seg_angle * sgn);
         cur = m * cur;
         cp = cur * rk + vec(cur.y, -cur.x) * rk * k;
-        points[count++] = kPoint(cp) + center;
+        points[count++] = cp.topoint<vec::type>() + center;
 
-        points[count++] = kPoint(cur * rk) + center;
+        points[count++] = (cur * rk).topoint<vec::type>() + center;
 
         if ((count + 3) >= MAX_ARC_POINTS) {
             break;
@@ -449,7 +448,47 @@ kSize kTextService::TextSize(const char *text, int count, const kFont *font, kSi
 {
     if (font) {
         font->needResource();
-        return p_impl->TextSize(text, count, font, bounds);
+
+        bool multiline = properties && properties->multiline;
+        if (multiline) {
+            kSize result;
+
+            const unsigned char *t = reinterpret_cast<const unsigned char*>(text);
+            if (count = -1) {
+                count = int(strlen(text));
+            }
+            const unsigned char *end = t + count;
+
+            while (t != end) {
+                size_t word = 0;
+                const unsigned char *w = t;
+                while (t != end && *t > 32) {
+                    ++word;
+                    ++t;
+                }
+
+                bool wasbreak = false;
+                size_t space = 0;
+                while (t != end && *t <= 32) {
+                    if (*t == '\n') {
+                        wasbreak = true;
+                        ++t;
+                        break;
+                    }
+                    ++space;
+                    ++t;
+                }
+
+                if (word) {
+
+
+                }
+            }
+
+            return result;
+        } else {
+            return p_impl->TextSize(text, count, font, bounds);
+        }
     } else {
         return kSize();
     }
@@ -632,6 +671,127 @@ void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont *fo
 
 void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties)
 {
+    if (brush && font) {
+        if (brush) {
+            brush->needResource();
+        }
+        if (font) {
+            font->needResource();
+        }
+
+        p_impl->BeginClippedDrawingByRect(rect);
+
+        if (properties) {
+            // if properties defined, output multiline text with word wrapping
+            kFontMetrics fm;
+            p_impl->GetFontMetrics(font, &fm);
+
+            const unsigned char *t = reinterpret_cast<const unsigned char*>(text);
+            if (count = -1) {
+                count = int(strlen(text));
+            }
+            const unsigned char *end = t + count;
+
+            kScalar spacewidth = p_impl->TextSize(" ", 1, font, nullptr).width;
+            kScalar ellipseswidth = 0;
+            if (properties->ellipses) {
+                ellipseswidth = p_impl->TextSize("...", 3, font, nullptr).width;
+            }
+
+            kPoint cp = rect.getLeftTop();
+            kScalar lastspace = 0;
+            while (t != end) {
+                // find word
+                size_t word = 0;
+                const unsigned char *w = t;
+                while (t != end && *t > 32) {
+                    ++word;
+                    ++t;
+                }
+
+                // find spaces and breaks
+                bool wasbreak = false;
+                size_t space = 0;
+                while (t != end && *t <= 32) {
+                    if (properties->multiline && !properties->ignorelinebreaks && *t == '\n') {
+                        wasbreak = true;
+                        ++t;
+                        break;
+                    }
+                    ++space;
+                    ++t;
+                }
+
+                kScalar currentspace = 0;
+                if (space) {
+                    currentspace = properties->mergespaces ? spacewidth : space * spacewidth;
+                }
+
+                // if word found - render it with cp adjustment and line breaking if
+                // needed
+                if (word) {
+                    kSize wordbounds;
+                    kScalar wordwidth = p_impl->TextSize(
+                        reinterpret_cast<const char*>(w), int(word), font, &wordbounds
+                    ).width;
+
+                    if (properties->ellipses) {
+                        // word treated as bound-crossing if it's not last and
+                        // there's not enough space to insert ellipses
+                        bool wordcrossedbounds = (cp.x + lastspace + wordwidth + currentspace) > (rect.right - ellipseswidth);
+
+                        // check if current word needs to be cut by ellipses
+                        if (!properties->multiline && wordcrossedbounds) {
+                            cp.x += lastspace;
+                            kScalar x = cp.x;
+                            size_t n = 0;
+                            for (; n < word; ++n) {
+                                kScalar width = p_impl->TextSize(reinterpret_cast<const char*>(w + n), 1, font, nullptr).width;
+                                if ((x + width) > (rect.right - ellipseswidth)) {
+                                    break;
+                                } else {
+                                    x += width;
+                                }
+                            }
+
+                            p_impl->Text(cp, reinterpret_cast<const char*>(w), int(n), font, brush, kTextOrigin::Top);
+                            p_impl->Text(kPoint(x, cp.y), "...", 3, font, brush, kTextOrigin::Top);
+
+                            // rest part of the text ignored, because it will be clipped
+                            break;
+                        }
+                    }
+
+                    bool wordcrossedbounds = (cp.x + lastspace + wordbounds.width) > rect.right;
+                    if (properties->multiline && wordcrossedbounds) {
+                        cp.x = rect.left;
+                        cp.y += fm.height + properties->interval;
+                    } else {
+                        cp.x += lastspace;
+                    }
+
+                    p_impl->Text(
+                        cp, reinterpret_cast<const char*>(w), int(word), font, brush,
+                        kTextOrigin::Top
+                    );
+                    cp.x += wordwidth;
+                }
+
+                lastspace = currentspace;
+
+                if (wasbreak) {
+                    cp.x = rect.left;
+                    cp.y += fm.height + properties->interval;
+                }
+            }
+        } else {
+            // if properties not given, use default text out as single line clipped to bounds
+            // line breaks in text ignored
+            p_impl->Text(rect.getLeftTop(), text, count, font, brush, kTextOrigin::Top);
+        }
+
+        p_impl->EndClippedDrawing();
+    }
 }
 
 void kCanvas::BeginClippedDrawing(const kBitmap *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend)
