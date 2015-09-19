@@ -24,8 +24,14 @@ namespace k_canvas
             return new CanvasFactoryD2D();
         }
 
+        CanvasFactory* CreateGDIPlusFactory()
+        {
+            return new CanvasFactoryGDIPlus();
+        }
+
         FACTORY_DESCRIPTORS_BEGIN()
-        FACTORY_DESCRIPTOR(IMPL_D2D, CreateD2DFactory)
+        //FACTORY_DESCRIPTOR(IMPL_D2D, CreateD2DFactory)
+        FACTORY_DESCRIPTOR(IMPL_GDIPLUS, CreateGDIPlusFactory)
         FACTORY_DESCRIPTORS_END()
 
     } // namespace impl
