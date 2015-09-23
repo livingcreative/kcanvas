@@ -13,7 +13,14 @@
 
 #pragma once
 
+// Cairo implementation (mostly for Linux)
+#ifdef _CAIRO
+#include "cairo/platform.h"
+#else
+
 // Windows platform implementation
 #ifdef _WIN32
 #include "win/platform.h"
+#endif
+
 #endif

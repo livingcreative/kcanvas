@@ -14,7 +14,7 @@
 #pragma once
 
 #ifdef _CAIRO
-#include "canvasimplcairo.h"
+#include "cairo/canvasimplcairo.h"
 #else
 
 #ifdef _WIN32
