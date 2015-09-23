@@ -1220,7 +1220,7 @@ kGDIPlusBrush::~kGDIPlusBrush()
 
 /*
  -------------------------------------------------------------------------------
- kD2DFont object implementation
+ kGDIPlusFont object implementation
  -------------------------------------------------------------------------------
 */
 
