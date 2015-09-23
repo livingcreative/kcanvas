@@ -16,6 +16,7 @@ set(HEADERS
 	${HEADERS}
 	${INCLUDE_PATH}/win/platform.h
 	win/canvasimpld2d.h
+	win/canvasimplgdiplus.h
 )
 
 # windows platform build sources
@@ -23,6 +24,7 @@ set(SOURCES
 	${SOURCES}
 	win/platform.cpp
 	win/canvasimpld2d.cpp
+	win/canvasimplgdiplus.cpp
 )
 
 # Visual Studio specific defines and options
