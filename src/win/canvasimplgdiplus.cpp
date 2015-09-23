@@ -633,17 +633,19 @@ void kCanvasImplGDIPlus::GetFontMetrics(const kFontBase *font, kFontMetrics *met
     OUTLINETEXTMETRICA tm;
     GetOutlineTextMetricsA(dc, sizeof(tm), &tm);
 
-    metrics->ascent = tm.otmTextMetrics.tmAscent;
-    metrics->descent = tm.otmTextMetrics.tmDescent;
-    metrics->height = tm.otmTextMetrics.tmHeight;
-    metrics->linegap = tm.otmTextMetrics.tmExternalLeading;
+    // TODO: check for correct units
+
+    metrics->ascent = kScalar(tm.otmTextMetrics.tmAscent);
+    metrics->descent = kScalar(tm.otmTextMetrics.tmDescent);
+    metrics->height = kScalar(tm.otmTextMetrics.tmHeight);
+    metrics->linegap = kScalar(tm.otmTextMetrics.tmExternalLeading);
     // TODO: this two metrics are not supported under GDI/GDI+
     metrics->capheight = 0;
     metrics->xheight = 0;
-    metrics->underlinepos = tm.otmsUnderscorePosition;
-    metrics->underlinewidth = tm.otmsUnderscorePosition;
-    metrics->strikethroughpos = tm.otmsStrikeoutPosition;
-    metrics->strikethroughwidth = tm.otmsStrikeoutSize;
+    metrics->underlinepos = kScalar(tm.otmsUnderscorePosition);
+    metrics->underlinewidth = kScalar(tm.otmsUnderscorePosition);
+    metrics->strikethroughpos = kScalar(tm.otmsStrikeoutPosition);
+    metrics->strikethroughwidth = kScalar(tm.otmsStrikeoutSize);
 
     SelectObject(dc, pf);
     DeleteDC(dc);
@@ -688,7 +690,7 @@ kSize kCanvasImplGDIPlus::TextSize(const char *text, int count, const kFontBase 
     // GDI+ can't measure single space character, why anybody want to do that, yeah?
 
     if (count == -1) {
-        count = strlen(text);
+        count = int(strlen(text));
     }
 
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
