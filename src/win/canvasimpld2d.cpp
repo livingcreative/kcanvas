@@ -362,6 +362,7 @@ void kPathImplD2D::OpenSink()
         p_opened = false;
     }
 }
+
 void kPathImplD2D::CloseSink()
 {
     if (p_sink) {
@@ -708,6 +709,9 @@ void kCanvasImplD2D::DrawPath(const kPathImpl *path, const kPenBase *pen, const 
 
 void kCanvasImplD2D::DrawPath(const kPathImpl *path, const kPenBase *pen, const kBrushBase *brush, const kTransform &transform)
 {
+    // Q: why just not to change global transform?
+    // A: because global transform will scale pen/brush properties
+
     const kPathImplD2D *p = reinterpret_cast<const kPathImplD2D*>(path);
     if (!p->p_path) {
         return;

@@ -38,6 +38,9 @@ namespace k_canvas
             void Initialize(const kGradientStop *stops, size_t count, kExtendType extend) override;
 
         protected:
+            kGradientStop *p_stops;
+            size_t         p_count;
+            kExtendType    p_extend;
         };
 
 
@@ -69,6 +72,8 @@ namespace k_canvas
             void FromPath(const kPathImpl *source, const kTransform &transform) override;
 
         private:
+            Gdiplus::GraphicsPath *p_path;
+            kPoint                 p_cp;
         };
 
 
@@ -91,6 +96,7 @@ namespace k_canvas
             void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourceputch, void *data) override;
 
         private:
+            Gdiplus::Bitmap *p_bitmap;
         };
 
 
@@ -145,6 +151,34 @@ namespace k_canvas
             void SetTransform(const kTransform &transform) override;
 
         private:
+            struct Clip
+            {
+                Gdiplus::GraphicsContainer  container;
+                Gdiplus::Bitmap            *maskedimage;
+                Gdiplus::Bitmap            *mask;
+                Gdiplus::PointF             origin;
+                Gdiplus::Graphics          *graphics;
+                kRectInt                    boundrect;
+            };
+
+            void SetDefaults();
+            void UpdateTransform();
+            Clip& PushClipState(bool createcontainer);
+            void PopClipState();
+
+            void CopyMask(int width, int height, Gdiplus::Bitmap *maskedimage, Gdiplus::Bitmap *mask);
+
+            void DrawPathImpl(const Gdiplus::GraphicsPath *path, const kPenBase *pen, const kBrushBase *brush);
+
+        private:
+            HDC                          boundDC;
+            HDC                          cacheDC;
+            HGDIOBJ                      prevbitmap;
+            kRectInt                     boundrect;
+            Gdiplus::Graphics           *g;
+            const Gdiplus::StringFormat *sf;
+            kTransform                   transform;
+            std::vector<Clip>            clipStack;
         };
 
 
@@ -157,21 +191,16 @@ namespace k_canvas
         class kGDIPlusStroke : public kResourceObject
         {
         public:
-            enum ResourceIndex
-            {
-                RESOURCE_STYLE
-            };
-
-        public:
             kGDIPlusStroke(const StrokeData &stroke);
             ~kGDIPlusStroke() override;
 
             void setupNativeResources(void **native) override
-            {
-                //native[RESOURCE_STYLE] = p_strokestyle;
-            }
+            {}
+
+            const StrokeData& getStrokeData() const { return p_stroke; }
 
         private:
+            StrokeData p_stroke;
         };
 
 
@@ -186,8 +215,7 @@ namespace k_canvas
         public:
             enum ResourceIndex
             {
-                RESOURCE_BRUSH,
-                RESOURCE_STYLE
+                RESOURCE_PEN
             };
 
         public:
@@ -196,11 +224,11 @@ namespace k_canvas
 
             void setupNativeResources(void **native) override
             {
-                //native[RESOURCE_BRUSH] = p_brush;
-                //native[RESOURCE_STYLE] = p_strokestyle;
+                native[RESOURCE_PEN] = p_pen;
             }
 
         private:
+            Gdiplus::Pen *p_pen;
         };
 
 
@@ -215,7 +243,9 @@ namespace k_canvas
         public:
             enum ResourceIndex
             {
-                RESOURCE_BRUSH
+                RESOURCE_BRUSH,
+                RESUURCE_SECONDARYBRUSH,
+                RESUURCE_SECONDARYBRUSHCLIP
             };
 
         public:
@@ -224,10 +254,15 @@ namespace k_canvas
 
             void setupNativeResources(void **native) override
             {
-                //native[RESOURCE_BRUSH] = p_brush;
+                native[RESOURCE_BRUSH] = p_brush;
+                native[RESUURCE_SECONDARYBRUSH] = p_secondarybrush;
+                native[RESUURCE_SECONDARYBRUSHCLIP] = p_secondaryclip;
             }
 
         private:
+            Gdiplus::Brush        *p_brush;
+            Gdiplus::Brush        *p_secondarybrush;
+            Gdiplus::GraphicsPath *p_secondaryclip;
         };
 
 
@@ -243,7 +278,7 @@ namespace k_canvas
             enum ResourceIndex
             {
                 RESOURCE_FONT,
-                RESOURCE_FONTFACE
+                RESOURCE_GDIFONT
             };
 
         public:
@@ -252,11 +287,13 @@ namespace k_canvas
 
             void setupNativeResources(void **native) override
             {
-                //native[RESOURCE_FONT] = p_font;
-                //native[RESOURCE_FONTFACE] = p_face;
+                native[RESOURCE_FONT] = p_font;
+                native[RESOURCE_GDIFONT] = p_gdifont;
             }
 
         private:
+            Gdiplus::Font *p_font;
+            HFONT          p_gdifont;
         };
 
 
@@ -356,6 +393,8 @@ namespace k_canvas
             ~CanvasFactoryGDIPlus() override;
 
         private:
+            Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+            ULONG_PTR                    gdiplusToken;
         };
 
     } // namespace impl

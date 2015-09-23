@@ -306,6 +306,11 @@ namespace k_canvas
         kColor color;
         kScalar position;
 
+        kGradientStop() :
+            color(),
+            position(0)
+        {}
+
         kGradientStop(const kColor _color, kScalar _position) :
             color(_color),
             position(_position)
