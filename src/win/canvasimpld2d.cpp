@@ -1091,14 +1091,14 @@ kD2DStroke::kD2DStroke(const StrokeData &stroke)
     float *dashes = nullptr;
     UINT dash_count = 0;
 
-    float dashlen = 2.0f;
-    float dashspace = 2.0f;
+    float dashlen = 3.0f;
+    float dashspace = 1.0f;
     float dotlen = 1.0f;
     float dotspace = 1.0f;
 
     if (stroke.p_dashcap != kCapStyle::Flat) {
-        dashlen = 1.0f;
-        dashspace = 3.0f;
+        dashlen = 2.0f;
+        dashspace = 2.0f;
         dotlen = 0.0f;
         dotspace = 2.0f;
     }

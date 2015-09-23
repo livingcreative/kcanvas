@@ -30,7 +30,7 @@ namespace k_canvas
         }
 
         FACTORY_DESCRIPTORS_BEGIN()
-        //FACTORY_DESCRIPTOR(IMPL_D2D, CreateD2DFactory)
+        FACTORY_DESCRIPTOR(IMPL_D2D, CreateD2DFactory)
         FACTORY_DESCRIPTOR(IMPL_GDIPLUS, CreateGDIPlusFactory)
         FACTORY_DESCRIPTORS_END()
 
