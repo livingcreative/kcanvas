@@ -98,12 +98,15 @@ namespace k_canvas
             struct Command
             {
                 Command();
-                Command(CommandType _command, int _start_index = -1, size_t _element_count = 0, const kFontBase *_font = nullptr);
+                Command(CommandType _command, int _start_index = -1, size_t _element_count = 0, kResourceObject *_font = nullptr);
+                ~Command();
+
+                Command& operator=(const Command &source);
 
                 CommandType      command;
                 int              start_index;
                 size_t           element_count;
-                const kFontBase *font;
+                kResourceObject *font;
             };
 
             void AddCommand(CommandType command, size_t point_count);

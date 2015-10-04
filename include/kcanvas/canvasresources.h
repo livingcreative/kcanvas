@@ -191,6 +191,7 @@ namespace k_canvas
             friend class k_canvas::kTextService;
             friend class k_canvas::kCanvas;
             friend class kCanvasImpl;
+            friend class kPathImplDefault;
 
         protected:
             kSharedResourceBase() :

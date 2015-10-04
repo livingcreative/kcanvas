@@ -37,15 +37,35 @@ kPathImplDefault::kPathImplDefault() :
 kPathImplDefault::~kPathImplDefault()
 {}
 
-kPathImplDefault::Command::Command()
+kPathImplDefault::Command::Command() :
+    font(nullptr)
 {}
 
-kPathImplDefault::Command::Command(CommandType _command, int _start_index, size_t _element_count, const kFontBase *_font) :
+kPathImplDefault::Command::Command(CommandType _command, int _start_index, size_t _element_count, kResourceObject *_font) :
     command(_command),
     start_index(_start_index),
     element_count(_element_count),
     font(_font)
 {}
+
+kPathImplDefault::Command::~Command()
+{
+    if (font) {
+        font->release();
+    }
+}
+
+kPathImplDefault::Command& kPathImplDefault::Command::operator=(const Command &source)
+{
+    command = source.command;
+    start_index = source.start_index;
+    element_count = source.element_count;
+    font = source.font;
+    if (font) {
+        font->addref();
+    }
+    return *this;
+}
 
 void kPathImplDefault::MoveTo(const kPoint &p)
 {
@@ -89,7 +109,7 @@ void kPathImplDefault::Text(const char *text, int count, const kFontBase *font, 
         p_commands.resize(p_commands.size() + 16);
     }
 
-    p_commands[p_curr_command++] = Command(PC_TEXT, int(p_curr_text), 0, font);
+    p_commands[p_curr_command++] = Command(PC_TEXT, int(p_curr_text), 0, font->getResource());
 
     if (p_curr_text + 1 > p_text.size()) {
         p_text.resize(p_text.size() + 16);

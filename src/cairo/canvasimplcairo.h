@@ -37,6 +37,9 @@ namespace k_canvas
             void Initialize(const kGradientStop *stops, size_t count, kExtendType extend) override;
 
         protected:
+            kGradientStop *p_stops;
+            size_t         p_count;
+            kExtendType    p_extend;
         };
 
 
@@ -137,13 +140,27 @@ namespace k_canvas
             void SetTransform(const kTransform &transform) override;
 
         private:
-            void PathToCairoPath(const kPathImpl *path);
+            struct Clip
+            {
+                cairo_surface_t *surface;
+                cairo_t         *cairo;
+                cairo_pattern_t *pattern;
+            };
+
+            void PathToCairoPath(const kPathImpl *path, const kTransform &transform);
             void ApplyPen(const kPenBase *pen);
             void ApplyBrush(const kBrushBase *brush);
             void ApplyFont(const kFontBase *font);
+            void FillAndStroke(const kPenBase *pen, const kBrushBase *brush);
+            Clip& PushClip(bool save);
+            void PopClip();
+            static void PrepareText(const char *source, int length, char *buffer);
 
         private:
-            cairo_t *boundContext;
+            cairo_t           *boundContext;
+            bool               releaseContext;
+            kRectInt           bounds;
+            std::vector<Clip>  clipStack;
         };
 
 
@@ -156,11 +173,24 @@ namespace k_canvas
         class kCairoStroke : public kResourceObject
         {
         public:
+            enum ResourceIndex
+            {
+                RESOURCE_STROKE
+            };
+
+        public:
             kCairoStroke(const StrokeData &stroke);
             ~kCairoStroke() override;
 
             void setupNativeResources(void **native) override
-            {}
+            {
+                native[RESOURCE_STROKE] = this;
+            }
+
+            void ApplyToContext(cairo_t *context, float width) const;
+
+        private:
+            StrokeData p_data;
         };
 
 
@@ -190,9 +220,9 @@ namespace k_canvas
             void ApplyToContext(cairo_t *context) const;
 
         private:
-            kColorReal   p_color;
-            float        p_width;
-            kStrokeStyle p_style;
+            kCairoBrush  *p_brush;
+            kCairoStroke *p_stroke;
+            float         p_width;
         };
 
 
@@ -222,7 +252,9 @@ namespace k_canvas
             void ApplyToContext(cairo_t *context) const;
 
         private:
-            kColorReal p_color;
+            kBrushStyle      p_style;
+            kColorReal       p_color;
+            cairo_pattern_t *p_pattern;
         };
 
 
