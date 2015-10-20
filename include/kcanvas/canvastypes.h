@@ -313,44 +313,96 @@ namespace k_canvas
         {}
     };
 
-    // simple text rendering structs
+    // kFontMetrics
+    //      whole font metrics
     struct kFontMetrics
     {
-        kScalar ascent;
-        kScalar descent;
-        kScalar height;
-        kScalar capheight;
-        kScalar xheight;
-        kScalar linegap;
-        kScalar underlinepos;
-        kScalar underlinewidth;
-        kScalar strikethroughpos;
-        kScalar strikethroughwidth;
+        kScalar ascent;             // distance between baseline and bounding box top
+        kScalar descent;            // distance between baseline and bounding box bottom
+        kScalar height;             // total font height (typically == ascent + descent)
+        kScalar linegap;            // recommended interval between lines of text
+
+        kScalar underlinepos;       // underline line position relative to baseline (TODO: think of its value sign)
+        kScalar underlinewidth;     // underline line width
+        kScalar strikethroughpos;   // strikethrough line position relative to baseline (TODO: think of its value sign)
+        kScalar strikethroughwidth; // strikethrough line width
+
+        kScalar capheight;          // OPTIONAL (can be not set, == 0) captial letter height (H or M blackbox height)
+        kScalar xheight;            // OPTIONAL (can be not set, == 0) lowercase letter height (x letter height)
     };
 
+    // kGlyphMetrics
+    //      metrics of single font glyph
     struct kGlyphMetrics
     {
-        kScalar a;
-        kScalar b;
-        kScalar c;
+        kScalar leftbearing;
+        kScalar advance;
+        kScalar rightbearing;
     };
 
+    // kTextFlags flags for text service measure & text output functions
+    //     NOTE: there is actually some copy-paste from kFontStyle
+    //           declaration, think about simplifying it
+    struct kTextFlags
+    {
+        enum Flags
+        {
+            Multiline        = 0x01,
+            IgnoreLineBreaks = 0x02,
+            MergeSpaces      = 0x04,
+            Ellipses         = 0x08
+        };
+
+        kTextFlags() : p_value() {}
+        kTextFlags(Flags value) : p_value(value) {}
+        operator uint32_t() const { return p_value; }
+        kTextFlags operator=(const Flags value) { p_value = value; return *this; }
+        kTextFlags operator=(const uint32_t value) { p_value = value; return *this; }
+
+    private:
+        uint32_t p_value;
+    };
+
+    // kTextSizeProperties
+    //      properties for text measurement
     struct kTextSizeProperties
     {
-        bool    multiline;
-        bool    ignorelinebreaks;
-        bool    mergespaces;
-        kSize   bounds;
-        kScalar interval;
+        kTextFlags flags;
+        kScalar    interval;
+        kScalar    indent;
+        kScalar    defaulttabwidth;
+        kSize      bounds;
     };
 
+    // kTextHorizontalAlignment
+    //      defines horizontal alignment for box text rendering
+    enum class kTextHorizontalAlignment
+    {
+        Left    = 0,
+        Center  = 1,
+        Right   = 2,
+        Justify = 3
+    };
+
+    // kTextVerticalAlignment
+    //      defines vertical alignment for box text rendering
+    enum class kTextVerticalAlignment
+    {
+        Top    = 0,
+        Middle = 1,
+        Bottom = 2
+    };
+
+    // kTextOutProperties
+    //      properties for text rendering
     struct kTextOutProperties
     {
-        bool    multiline;
-        bool    ignorelinebreaks;
-        bool    mergespaces;
-        bool    ellipses;
-        kScalar interval;
+        kTextFlags               flags;
+        kScalar                  interval;
+        kScalar                  indent;
+        kScalar                  defaulttabwidth;
+        kTextHorizontalAlignment horzalign;
+        kTextVerticalAlignment   vertalign;
     };
 
 

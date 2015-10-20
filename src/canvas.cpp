@@ -449,7 +449,7 @@ kSize kTextService::TextSize(const char *text, int count, const kFont *font, kSi
     if (font) {
         font->needResource();
 
-        bool multiline = properties && properties->multiline;
+        bool multiline = properties && (properties->flags & kTextFlags::Multiline);
         if (multiline) {
             kSize result;
 
@@ -694,7 +694,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
 
             kScalar spacewidth = p_impl->TextSize(" ", 1, font, nullptr).width;
             kScalar ellipseswidth = 0;
-            if (properties->ellipses) {
+            if (properties->flags & kTextFlags::Ellipses) {
                 ellipseswidth = p_impl->TextSize("...", 3, font, nullptr).width;
             }
 
@@ -713,7 +713,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
                 bool wasbreak = false;
                 size_t space = 0;
                 while (t != end && *t <= 32) {
-                    if (properties->multiline && !properties->ignorelinebreaks && *t == '\n') {
+                    if ((properties->flags & kTextFlags::Multiline) && !(properties->flags & kTextFlags::IgnoreLineBreaks) && *t == '\n') {
                         wasbreak = true;
                         ++t;
                         break;
@@ -724,7 +724,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
 
                 kScalar currentspace = 0;
                 if (space) {
-                    currentspace = properties->mergespaces ? spacewidth : space * spacewidth;
+                    currentspace = properties->flags & kTextFlags::MergeSpaces ? spacewidth : space * spacewidth;
                 }
 
                 // if word found - render it with cp adjustment and line breaking if
@@ -735,13 +735,13 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
                         reinterpret_cast<const char*>(w), int(word), font, &wordbounds
                     ).width;
 
-                    if (properties->ellipses) {
+                    if (properties->flags & kTextFlags::Ellipses) {
                         // word treated as bound-crossing if it's not last and
                         // there's not enough space to insert ellipses
                         bool wordcrossedbounds = (cp.x + lastspace + wordwidth + currentspace) > (rect.right - ellipseswidth);
 
                         // check if current word needs to be cut by ellipses
-                        if (!properties->multiline && wordcrossedbounds) {
+                        if (!(properties->flags & kTextFlags::Multiline) && wordcrossedbounds) {
                             cp.x += lastspace;
                             kScalar x = cp.x;
                             size_t n = 0;
@@ -763,7 +763,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
                     }
 
                     bool wordcrossedbounds = (cp.x + lastspace + wordbounds.width) > rect.right;
-                    if (properties->multiline && wordcrossedbounds) {
+                    if ((properties->flags & kTextFlags::Multiline) && wordcrossedbounds) {
                         cp.x = rect.left;
                         cp.y += fm.height + properties->interval;
                     } else {
