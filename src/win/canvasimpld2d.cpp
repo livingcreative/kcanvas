@@ -789,7 +789,7 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
         _font_face->GetDesignGlyphMetrics(&index, 1, &abc, FALSE);
 
         cm->a = abc.leftSideBearing * k;
-        cm->b = abc.advanceWidth * k;
+        cm->b = (abc.advanceWidth - abc.leftSideBearing - abc.rightSideBearing) * k;
         cm->c = abc.rightSideBearing * k;
 
         ++cm;
