@@ -146,9 +146,9 @@ namespace k_canvas
             void DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha) override;
             void DrawMask(const kBitmapImpl *mask, kBrushBase *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize) override;
 
-            void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) override;
+            void GetFontMetrics(const kFontBase *font, kFontMetrics &metrics) override;
             void GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics) override;
-            kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) override;
+            kSize TextSize(const char *text, int count, const kFontBase *font, kRect *bounds) override;
             void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) override;
 
             void BeginClippedDrawingByMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) override;

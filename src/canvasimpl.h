@@ -166,9 +166,9 @@ namespace k_canvas
             virtual void DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha) = 0;
             virtual void DrawMask(const kBitmapImpl *mask, kBrushBase *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize) = 0;
 
-            virtual void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) = 0;
+            virtual void GetFontMetrics(const kFontBase *font, kFontMetrics &metrics) = 0;
             virtual void GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics) = 0;
-            virtual kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) = 0;
+            virtual kSize TextSize(const char *text, int count, const kFontBase *font, kRect *bounds) = 0;
             virtual void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) = 0;
 
             virtual void BeginClippedDrawingByMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) = 0;

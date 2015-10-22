@@ -428,7 +428,7 @@ kTextService::~kTextService()
     delete p_impl;
 }
 
-void kTextService::GetFontMetrics(const kFont *font, kFontMetrics *metrics)
+void kTextService::GetFontMetrics(const kFont *font, kFontMetrics &metrics)
 {
     if (font) {
         font->needResource();
@@ -444,7 +444,7 @@ void kTextService::GetGlyphMetrics(const kFont *font, size_t first, size_t last,
     }
 }
 
-kSize kTextService::TextSize(const char *text, int count, const kFont *font, kSize *bounds, const kTextSizeProperties *properties)
+kSize kTextService::TextSize(const char *text, int count, const kFont *font, const kTextSizeProperties *properties, kRect *bounds)
 {
     if (font) {
         font->needResource();
@@ -684,7 +684,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
         if (properties) {
             // if properties defined, output multiline text with word wrapping
             kFontMetrics fm;
-            p_impl->GetFontMetrics(font, &fm);
+            p_impl->GetFontMetrics(font, fm);
 
             const unsigned char *t = reinterpret_cast<const unsigned char*>(text);
             if (count = -1) {
@@ -730,7 +730,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
                 // if word found - render it with cp adjustment and line breaking if
                 // needed
                 if (word) {
-                    kSize wordbounds;
+                    kRect wordbounds;
                     kScalar wordwidth = p_impl->TextSize(
                         reinterpret_cast<const char*>(w), int(word), font, &wordbounds
                     ).width;
@@ -762,7 +762,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
                         }
                     }
 
-                    bool wordcrossedbounds = (cp.x + lastspace + wordbounds.width) > rect.right;
+                    bool wordcrossedbounds = (cp.x + lastspace + wordbounds.width()) > rect.right;
                     if ((properties->flags & kTextFlags::Multiline) && wordcrossedbounds) {
                         cp.x = rect.left;
                         cp.y += fm.height + properties->interval;

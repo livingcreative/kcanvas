@@ -455,9 +455,9 @@ namespace k_canvas
         ~kTextService();
 
         // simple text measuring and drawing 
-        void GetFontMetrics(const kFont *font, kFontMetrics *metrics);
+        void GetFontMetrics(const kFont *font, kFontMetrics &metrics);
         void GetGlyphMetrics(const kFont *font, size_t first, size_t last, kGlyphMetrics *metrics);
-        kSize TextSize(const char *text, int count, const kFont *font, kSize *bounds = nullptr, const kTextSizeProperties *properties = nullptr);
+        kSize TextSize(const char *text, int count, const kFont *font, const kTextSizeProperties *properties = nullptr, kRect *bounds = nullptr);
 
     protected:
         impl::kCanvasImpl *p_impl;

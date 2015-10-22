@@ -754,22 +754,22 @@ void kCanvasImplD2D::DrawMask(const kBitmapImpl *mask, kBrushBase *brush, const 
     P_RT->SetAntialiasMode(aa);
 }
 
-void kCanvasImplD2D::GetFontMetrics(const kFontBase *font, kFontMetrics *metrics)
+void kCanvasImplD2D::GetFontMetrics(const kFontBase *font, kFontMetrics &metrics)
 {
     DWRITE_FONT_METRICS m;
     _font_face->GetMetrics(&m);
     float k = PointSizeToDesignUnitsRatio(_font_size, m.designUnitsPerEm);
 
-    metrics->ascent = m.ascent * k;
-    metrics->descent = m.descent * k;
-    metrics->height = metrics->ascent + metrics->descent;
-    metrics->linegap = m.lineGap * k;
-    metrics->underlinepos = m.underlinePosition * k;
-    metrics->underlinewidth = m.underlineThickness * k;
-    metrics->strikethroughpos = m.strikethroughPosition * k;
-    metrics->strikethroughwidth = m.strikethroughThickness * k;
-    metrics->capheight = m.capHeight * k;
-    metrics->xheight = m.xHeight * k;
+    metrics.ascent = m.ascent * k;
+    metrics.descent = m.descent * k;
+    metrics.height = metrics.ascent + metrics.descent;
+    metrics.linegap = m.lineGap * k;
+    metrics.underlinepos = m.underlinePosition * k;
+    metrics.underlinewidth = m.underlineThickness * k;
+    metrics.strikethroughpos = m.strikethroughPosition * k;
+    metrics.strikethroughwidth = m.strikethroughThickness * k;
+    metrics.capheight = m.capHeight * k;
+    metrics.xheight = m.xHeight * k;
 }
 
 void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics)
@@ -796,7 +796,7 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
     }
 }
 
-kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *font, kSize *bounds)
+kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *font, kRect *bounds)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
     wstring t = count == -1 ?
@@ -827,12 +827,18 @@ kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *fon
             result.width += abc[n].advanceWidth * k;
         }
 
+        if (bounds && pos == 0) {
+            bounds->left = abc[0].leftSideBearing * k;
+            bounds->top = 0;
+        }
+
         pos += curlen;
 
         if (bounds && pos == length) {
-            *bounds = result;
-            bounds->width -= abc[pos - 1].rightSideBearing * k;
-            bounds->height += m.lineGap * k;
+            bounds->right = result.width;
+            bounds->bottom = result.height;
+            bounds->right -= abc[pos - 1].rightSideBearing * k;
+            bounds->bottom += m.lineGap * k;
         }
     }
 
