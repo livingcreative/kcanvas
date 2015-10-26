@@ -97,6 +97,7 @@ namespace k_canvas
 
         kFontStyle() : p_value() {}
         kFontStyle(Style value) : p_value(value) {}
+        kFontStyle(uint32_t value) : p_value(value) {}
         operator uint32_t() const { return p_value; }
         kFontStyle operator=(const Style value) { p_value = value; return *this; }
         kFontStyle operator=(const uint32_t value) { p_value = value; return *this; }
@@ -350,11 +351,14 @@ namespace k_canvas
             Multiline        = 0x01,
             IgnoreLineBreaks = 0x02,
             MergeSpaces      = 0x04,
-            Ellipses         = 0x08
+            UseTabs          = 0x08,
+            StrictBounds     = 0x10,
+            Ellipses         = 0x20
         };
 
         kTextFlags() : p_value() {}
         kTextFlags(Flags value) : p_value(value) {}
+        kTextFlags(uint32_t value) : p_value(value) {}
         operator uint32_t() const { return p_value; }
         kTextFlags operator=(const Flags value) { p_value = value; return *this; }
         kTextFlags operator=(const uint32_t value) { p_value = value; return *this; }

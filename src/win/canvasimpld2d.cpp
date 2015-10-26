@@ -796,12 +796,10 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
     }
 }
 
-kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *font, kRect *bounds)
+kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *font)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-    wstring t = count == -1 ?
-        convert.from_bytes(text) :
-        convert.from_bytes(text, text + count);
+    wstring t = convert.from_bytes(text, text + count);
 
     size_t length = t.length();
     size_t pos = 0;
@@ -827,19 +825,7 @@ kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *fon
             result.width += abc[n].advanceWidth * k;
         }
 
-        if (bounds && pos == 0) {
-            bounds->left = abc[0].leftSideBearing * k;
-            bounds->top = 0;
-        }
-
         pos += curlen;
-
-        if (bounds && pos == length) {
-            bounds->right = result.width;
-            bounds->bottom = result.height;
-            bounds->right -= abc[pos - 1].rightSideBearing * k;
-            bounds->bottom += m.lineGap * k;
-        }
     }
 
     return result;
@@ -1066,7 +1052,9 @@ void kCanvasImplD2D::GetGlyphRunMetrics(
 {
     for (size_t n = 0; n < curlen; ++n) {
         wchar_t ch = t[n + pos];
-        if (ch == '\n' || ch == '\r') {
+        // TODO: think about this check, actually canvas class shouldn't pass
+        //       special characters to text functions
+        if (ch >= 0 && ch < ' ') {
             ch = ' ';
         }
         codepoints[n] = ch;

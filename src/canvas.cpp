@@ -415,6 +415,146 @@ void kBitmap::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, siz
 
 /*
  -------------------------------------------------------------------------------
+ kWord & kWordBreaker helper classes
+ -------------------------------------------------------------------------------
+    Breaks text into words and other elements
+*/
+
+class Word
+{
+public:
+    enum Type
+    {
+        Text,
+        Space,
+        Tab,
+        LineBreak
+    };
+
+public:
+    const char *text;
+    size_t      length;
+    Type        type;
+};
+
+class WordBreaker
+{
+public:
+    WordBreaker(const char *text, size_t length, kTextFlags flags) :
+        p_text(reinterpret_cast<const unsigned char *>(text)),
+        p_pos(0),
+        p_length(length),
+        p_linebreaks((flags & kTextFlags::IgnoreLineBreaks) == 0),
+        p_tabstops((flags & kTextFlags::UseTabs) != 0)
+    {}
+
+    bool NextWord(Word &word)
+    {
+        if (p_pos == p_length) {
+            return false;
+        }
+
+        word.text = reinterpret_cast<const char *>(p_text + p_pos);
+
+        // try to find word boundaries
+        size_t start = p_pos;
+        while (p_pos < p_length) {
+            if (p_text[p_pos] <= ' ') {
+                break;
+            }
+            ++p_pos;
+        }
+
+        // if there were some characters this part of text is a word
+        if (p_pos > start) {
+            word.length = p_pos - start;
+            word.type = Word::Text;
+            return true;
+        }
+
+        // loop through spacing characters
+        word.length = 0;
+        while (p_pos < p_length) {
+            bool returnspaces = false;
+
+            switch (p_text[p_pos]) {
+                // check for tab stop character
+                case '\t':
+                    if (p_tabstops) {
+                        if (word.length) {
+                            returnspaces = true;
+                        } else {
+                            word.type = Word::Tab;
+                            ++p_pos;
+                            return true;
+                        }
+                    } else {
+                        ++p_pos;
+                        ++word.length;
+                    }
+                    break;
+
+                // check for line break sequence
+                case '\n':
+                case '\r': {
+                    size_t linebreak = 0;
+
+                    // check for one or two characters line breaks (LF, CRLF or LFCR)
+                    if ((p_length - p_pos) == 1) {
+                        linebreak = 1;
+                    } else {
+                        if ((p_text[p_pos] == '\r' && p_text[p_pos + 1] == '\n') ||
+                            (p_text[p_pos] == '\n' && p_text[p_pos + 1] == '\r')) {
+                            linebreak = 2;
+                        } else {
+                            linebreak = 1;
+                        }
+                    }
+
+                    if (p_linebreaks) {
+                        if (word.length) {
+                            returnspaces = true;
+                        } else {
+                            word.type = Word::LineBreak;
+                            p_pos += linebreak;
+                            return true;
+                        }
+                    } else {
+                        p_pos += linebreak;
+                        ++word.length;
+                    }
+                    break;
+                }
+
+                default:
+                    if (p_text[p_pos] > ' ') {
+                        returnspaces = true;
+                    } else {
+                        ++p_pos;
+                        ++word.length;
+                    }
+            }
+
+            if (returnspaces) {
+                break;
+            }
+        }
+
+        word.type = Word::Space;
+        return true;
+    }
+
+private:
+    const unsigned char *p_text;
+    size_t               p_pos;
+    size_t               p_length;
+    bool                 p_linebreaks;
+    bool                 p_tabstops;
+};
+
+
+/*
+ -------------------------------------------------------------------------------
  kTextService implementation
  -------------------------------------------------------------------------------
 */
@@ -444,54 +584,186 @@ void kTextService::GetGlyphMetrics(const kFont *font, size_t first, size_t last,
     }
 }
 
-kSize kTextService::TextSize(const char *text, int count, const kFont *font, const kTextSizeProperties *properties, kRect *bounds)
+template <typename T, typename C>
+static kSize TextLayout(kCanvasImpl *impl, const char *text, int count, const kFont *font, const T *properties, kScalar maxwidth, const C &callback, kRect &bounds)
 {
-    if (font) {
-        font->needResource();
+    kGlyphMetrics spaceglyph;
+    impl->GetGlyphMetrics(font, ' ', ' ', &spaceglyph);
 
-        bool multiline = properties && (properties->flags & kTextFlags::Multiline);
-        if (multiline) {
-            kSize result;
+    kFontMetrics fm;
+    impl->GetFontMetrics(font, fm);
 
-            const unsigned char *t = reinterpret_cast<const unsigned char*>(text);
-            if (count = -1) {
-                count = int(strlen(text));
-            }
-            const unsigned char *end = t + count;
+    kTextFlags flags;
+    kScalar    interval;
+    kScalar    indent;
+    kScalar    defaulttabwidth;
 
-            while (t != end) {
-                size_t word = 0;
-                const unsigned char *w = t;
-                while (t != end && *t > 32) {
-                    ++word;
-                    ++t;
-                }
-
-                bool wasbreak = false;
-                size_t space = 0;
-                while (t != end && *t <= 32) {
-                    if (*t == '\n') {
-                        wasbreak = true;
-                        ++t;
-                        break;
-                    }
-                    ++space;
-                    ++t;
-                }
-
-                if (word) {
-
-
-                }
-            }
-
-            return result;
-        } else {
-            return p_impl->TextSize(text, count, font, bounds);
+    if (properties) {
+        flags = properties->flags;
+        interval = properties->interval;
+        indent = properties->indent;
+        defaulttabwidth = properties->defaulttabwidth;
+        if (defaulttabwidth < spaceglyph.advance) {
+            defaulttabwidth = spaceglyph.advance;
         }
     } else {
-        return kSize();
+        defaulttabwidth = 0;
+        indent = 0;
+        interval = 0;
+        flags = kTextFlags::IgnoreLineBreaks;
     }
+
+    bool multiline = (flags & kTextFlags::Multiline) != 0;
+    bool ignorelinebreaks = !multiline || (flags & kTextFlags::IgnoreLineBreaks) != 0;
+    bool usetabs = (flags & kTextFlags::UseTabs) != 0;
+
+    WordBreaker wordbreaker(text, count, flags);
+
+    kScalar tabwidth = 0;
+    kSize result;
+    kPoint cp(indent, 0);
+
+    kScalar leftbound = 0;
+    kScalar rightbound = 0;
+
+    Word word;
+    while (wordbreaker.NextWord(word)) {
+        switch (word.type) {
+            case Word::Text: {
+                kScalar wordwidth = impl->TextSize(word.text, int(word.length), font).width;
+                bool breaktonextline = multiline && (cp.x + wordwidth) > maxwidth;
+                if (breaktonextline) {
+                    cp.x = 0;
+                    cp.y += fm.height + fm.linegap + interval;
+                    result.height = cp.y;
+                }
+
+                kGlyphMetrics gm;
+                // take word first glyph metrics
+                size_t glyph = word.text[0];
+                impl->GetGlyphMetrics(font, glyph, glyph, &gm);
+
+                if ((cp.x + gm.leftbearing) < leftbound) {
+                    leftbound = cp.x + gm.leftbearing;
+                }
+
+                if (word.length > 1) {
+                    glyph = word.text[word.length - 1];
+                    impl->GetGlyphMetrics(font, glyph, glyph, &gm);
+                }
+
+                callback(cp, word.text, int(word.length), wordwidth, breaktonextline);
+                cp.x += wordwidth;
+
+                if (cp.x > result.width) {
+                    result.width = cp.x;
+                }
+
+                if ((cp.x + gm.rightbearing) > rightbound) {
+                    rightbound = cp.x + gm.rightbearing;
+                }
+
+                break;
+            }
+
+            case Word::LineBreak:
+                if (multiline && !ignorelinebreaks) {
+                    cp.x = 0;
+                    cp.y += fm.height + fm.linegap + interval;
+                    result.height = cp.y;
+                } else {
+                    cp.x += spaceglyph.advance;
+                }
+                break;
+
+            case Word::Space:
+                cp.x += spaceglyph.advance * word.length;
+                break;
+
+            case Word::Tab:
+                if (!usetabs) {
+                    cp.x += spaceglyph.advance;
+                } else {
+                    while (tabwidth < cp.x) {
+                        tabwidth += defaulttabwidth;
+                    }
+                    cp.x = tabwidth;
+                }
+                break;
+        }
+    }
+
+    if (cp.x > 0.0f) {
+        if (cp.x > result.width) {
+            result.width = cp.x;
+        }
+        result.height += fm.height;
+    }
+
+    bounds.left = leftbound;
+    bounds.top = 0;
+    bounds.right = rightbound;
+    bounds.bottom = result.height + fm.linegap;
+    // NOTE: think about break at text end, the linegap will be added twice
+
+    return result;
+}
+
+#define LAYOUT_CALLBACK_PARAMS\
+    const kPoint &cp,\
+    const char *text, int count,\
+    kScalar width, bool newline
+
+class NullLayoutCallback
+{
+public:
+    void operator()(LAYOUT_CALLBACK_PARAMS) const
+    {}
+};
+
+kSize kTextService::TextSize(const char *text, int count, const kFont *font, const kTextSizeProperties *properties, kRect *bounds)
+{
+    kSize result;
+
+    if (font) {
+        if (count == -1) {
+            count = int(strlen(text));
+        }
+        if (count == 0) {
+            return result;
+        }
+
+        font->needResource();
+
+        NullLayoutCallback callback;
+        kRect resultbounds;
+        result = TextLayout(
+            p_impl, text, count, font, properties,
+            properties ? properties->bounds.width : 1e37f,
+            callback, resultbounds
+        );
+
+        if (properties) {
+            if (properties->bounds.width > result.width) {
+                result.width = properties->bounds.width;
+            }
+
+            if (properties->bounds.height > result.height) {
+                result.height = properties->bounds.height;
+            }
+
+            if (properties->flags & kTextFlags::StrictBounds) {
+                result.width = umin(result.width, properties->bounds.width);
+                result.height = umin(result.height, properties->bounds.height);
+            }
+        }
+
+        if (bounds) {
+            *bounds = resultbounds;
+        }
+    }
+
+    return result;
 }
 
 
@@ -665,9 +937,66 @@ void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont *fo
         if (font) {
             font->needResource();
         }
+
+        if (count == -1) {
+            count = int(strlen(text));
+        }
         p_impl->Text(p, text, count, font, brush, origin);
     }
 }
+
+class RenderLayoutCallback
+{
+public:
+    RenderLayoutCallback(const kPoint &origin, kCanvasImpl *impl, const kFont *font, const kBrush *brush) :
+        p_origin(origin),
+        p_impl(impl),
+        p_font(font),
+        p_brush(brush)
+    {}
+
+    void operator()(LAYOUT_CALLBACK_PARAMS) const
+    {
+        p_impl->Text(p_origin + cp, text, count, p_font, p_brush, kTextOrigin::Top);
+    }
+
+private:
+    kPoint        p_origin;
+    kCanvasImpl  *p_impl;
+    const kFont  *p_font;
+    const kBrush *p_brush;
+};
+
+
+struct CachedWord
+{
+    const char *text;
+    size_t      count;
+    kPoint      position;
+    kScalar     width;
+    bool        newline;
+};
+
+typedef std::vector<CachedWord> CachedWordsList;
+
+class CacheLayoutCallback
+{
+public:
+    CacheLayoutCallback(CachedWordsList &cache) :
+        p_cache(cache)
+    {}
+
+    void operator()(LAYOUT_CALLBACK_PARAMS) const
+    {
+        CachedWord word = {
+            text, count, cp, width, newline
+        };
+        p_cache.push_back(word);
+    }
+
+private:
+    CachedWordsList &p_cache;
+};
 
 void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties)
 {
@@ -679,118 +1008,103 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
             font->needResource();
         }
 
-        p_impl->BeginClippedDrawingByRect(rect);
+        bool strictbounds = properties ?
+            (properties->flags & kTextFlags::StrictBounds) != 0 : false;
 
-        if (properties) {
-            // if properties defined, output multiline text with word wrapping
-            kFontMetrics fm;
-            p_impl->GetFontMetrics(font, fm);
-
-            const unsigned char *t = reinterpret_cast<const unsigned char*>(text);
-            if (count = -1) {
-                count = int(strlen(text));
-            }
-            const unsigned char *end = t + count;
-
-            kScalar spacewidth = p_impl->TextSize(" ", 1, font, nullptr).width;
-            kScalar ellipseswidth = 0;
-            if (properties->flags & kTextFlags::Ellipses) {
-                ellipseswidth = p_impl->TextSize("...", 3, font, nullptr).width;
-            }
-
-            kPoint cp = rect.getLeftTop();
-            kScalar lastspace = 0;
-            while (t != end) {
-                // find word
-                size_t word = 0;
-                const unsigned char *w = t;
-                while (t != end && *t > 32) {
-                    ++word;
-                    ++t;
-                }
-
-                // find spaces and breaks
-                bool wasbreak = false;
-                size_t space = 0;
-                while (t != end && *t <= 32) {
-                    if ((properties->flags & kTextFlags::Multiline) && !(properties->flags & kTextFlags::IgnoreLineBreaks) && *t == '\n') {
-                        wasbreak = true;
-                        ++t;
-                        break;
-                    }
-                    ++space;
-                    ++t;
-                }
-
-                kScalar currentspace = 0;
-                if (space) {
-                    currentspace = properties->flags & kTextFlags::MergeSpaces ? spacewidth : space * spacewidth;
-                }
-
-                // if word found - render it with cp adjustment and line breaking if
-                // needed
-                if (word) {
-                    kRect wordbounds;
-                    kScalar wordwidth = p_impl->TextSize(
-                        reinterpret_cast<const char*>(w), int(word), font, &wordbounds
-                    ).width;
-
-                    if (properties->flags & kTextFlags::Ellipses) {
-                        // word treated as bound-crossing if it's not last and
-                        // there's not enough space to insert ellipses
-                        bool wordcrossedbounds = (cp.x + lastspace + wordwidth + currentspace) > (rect.right - ellipseswidth);
-
-                        // check if current word needs to be cut by ellipses
-                        if (!(properties->flags & kTextFlags::Multiline) && wordcrossedbounds) {
-                            cp.x += lastspace;
-                            kScalar x = cp.x;
-                            size_t n = 0;
-                            for (; n < word; ++n) {
-                                kScalar width = p_impl->TextSize(reinterpret_cast<const char*>(w + n), 1, font, nullptr).width;
-                                if ((x + width) > (rect.right - ellipseswidth)) {
-                                    break;
-                                } else {
-                                    x += width;
-                                }
-                            }
-
-                            p_impl->Text(cp, reinterpret_cast<const char*>(w), int(n), font, brush, kTextOrigin::Top);
-                            p_impl->Text(kPoint(x, cp.y), "...", 3, font, brush, kTextOrigin::Top);
-
-                            // rest part of the text ignored, because it will be clipped
-                            break;
-                        }
-                    }
-
-                    bool wordcrossedbounds = (cp.x + lastspace + wordbounds.width()) > rect.right;
-                    if ((properties->flags & kTextFlags::Multiline) && wordcrossedbounds) {
-                        cp.x = rect.left;
-                        cp.y += fm.height + properties->interval;
-                    } else {
-                        cp.x += lastspace;
-                    }
-
-                    p_impl->Text(
-                        cp, reinterpret_cast<const char*>(w), int(word), font, brush,
-                        kTextOrigin::Top
-                    );
-                    cp.x += wordwidth;
-                }
-
-                lastspace = currentspace;
-
-                if (wasbreak) {
-                    cp.x = rect.left;
-                    cp.y += fm.height + properties->interval;
-                }
-            }
-        } else {
-            // if properties not given, use default text out as single line clipped to bounds
-            // line breaks in text ignored
-            p_impl->Text(rect.getLeftTop(), text, count, font, brush, kTextOrigin::Top);
+        if (strictbounds) {
+            p_impl->BeginClippedDrawingByRect(rect);
         }
 
-        p_impl->EndClippedDrawing();
+        kRect resultbounds;
+
+        bool directoutput =
+            properties == nullptr || (
+                properties->horzalign == kTextHorizontalAlignment::Left &&
+                properties->vertalign == kTextVerticalAlignment::Top &&
+                (properties->flags & kTextFlags::Ellipses) == 0
+            );
+
+        if (directoutput) {
+            RenderLayoutCallback callback(rect.getLeftTop(), p_impl, font, brush);
+            TextLayout(
+                p_impl, text, count, font, properties,
+                rect.width(), callback, resultbounds
+            );
+        } else {
+            CachedWordsList cache;
+            cache.reserve(256);
+            CacheLayoutCallback callback(cache);
+            kSize size = TextLayout(
+                p_impl, text, count, font, properties,
+                rect.width(), callback, resultbounds
+            );
+
+            kSize alignboundssize;
+            alignboundssize.width = umax(size.width, rect.width());
+            alignboundssize.height = umax(size.height, rect.height());
+
+            kScalar verticaloffset = 0;
+            switch (properties->vertalign) {
+                case kTextVerticalAlignment::Middle:
+                    verticaloffset = alignboundssize.height * 0.5f - size.height * 0.5f;
+                    break;
+
+                case kTextVerticalAlignment::Bottom:
+                    verticaloffset = alignboundssize.height - size.height;
+                    break;
+            }
+
+            size_t cw = 0;
+            size_t sz = cache.size();
+            while (cw < sz) {
+                // search for row bounds
+                size_t start = cw;
+                while (cw < sz && !cache[cw].newline) {
+                    ++cw;
+                }
+
+                kScalar width = cache[cw - 1].position.x + cache[cw - 1].width;
+
+                kScalar totaloffset = 0;
+                kScalar interwordspacing = 0;
+
+                switch (properties->horzalign) {
+                    case kTextHorizontalAlignment::Center:
+                        totaloffset = alignboundssize.width * 0.5f - width * 0.5f;
+                        break;
+
+                    case kTextHorizontalAlignment::Right:
+                        totaloffset = alignboundssize.width - width;
+                        break;
+
+                    case kTextHorizontalAlignment::Justify:
+                        if (cw < sz) {
+                            size_t spacecount = cw - start - 1;
+                            if (spacecount) {
+                                interwordspacing = (alignboundssize.width - width) / spacecount;
+                            }
+                        }
+                        break;
+                }
+
+                kPoint cp = rect.getLeftTop() + kPoint(totaloffset, verticaloffset);
+                for (size_t n = start; n < cw; ++n) {
+                    p_impl->Text(
+                        cp + cache[n].position , cache[n].text, int(cache[n].count),
+                        font, brush, kTextOrigin::Top
+                    );
+                    cp.x += interwordspacing;
+                }
+
+                if (cw < sz) {
+                    cache[cw].newline = false;
+                }
+            }
+        }
+
+        if (strictbounds) {
+            p_impl->EndClippedDrawing();
+        }
     }
 }
 
