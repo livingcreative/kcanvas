@@ -353,7 +353,8 @@ namespace k_canvas
             MergeSpaces      = 0x04,
             UseTabs          = 0x08,
             StrictBounds     = 0x10,
-            Ellipses         = 0x20
+            ClipToBounds     = 0x20,
+            Ellipses         = 0x40
         };
 
         kTextFlags() : p_value() {}

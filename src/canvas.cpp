@@ -585,13 +585,20 @@ void kTextService::GetGlyphMetrics(const kFont *font, size_t first, size_t last,
 }
 
 template <typename T, typename C>
-static kSize TextLayout(kCanvasImpl *impl, const char *text, int count, const kFont *font, const T *properties, kScalar maxwidth, const C &callback, kRect &bounds)
+static kSize TextLayout(
+    kCanvasImpl *impl, const char *text, int count, const kFont *font,
+    const T *properties, kScalar maxwidth, const C &callback, kRect &bounds,
+    kFontMetrics *fontmetrics = nullptr
+)
 {
     kGlyphMetrics spaceglyph;
     impl->GetGlyphMetrics(font, ' ', ' ', &spaceglyph);
 
     kFontMetrics fm;
     impl->GetFontMetrics(font, fm);
+    if (fontmetrics) {
+        *fontmetrics = fm;
+    }
 
     kTextFlags flags;
     kScalar    interval;
@@ -948,7 +955,10 @@ void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont *fo
 class RenderLayoutCallback
 {
 public:
-    RenderLayoutCallback(const kPoint &origin, kCanvasImpl *impl, const kFont *font, const kBrush *brush) :
+    RenderLayoutCallback(
+        const kPoint &origin, kCanvasImpl *impl,
+        const kFont *font, const kBrush *brush
+    ) :
         p_origin(origin),
         p_impl(impl),
         p_font(font),
@@ -1008,10 +1018,10 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
             font->needResource();
         }
 
-        bool strictbounds = properties ?
-            (properties->flags & kTextFlags::StrictBounds) != 0 : false;
+        bool cliptobounds = properties ?
+            (properties->flags & kTextFlags::ClipToBounds) != 0 : false;
 
-        if (strictbounds) {
+        if (cliptobounds) {
             p_impl->BeginClippedDrawingByRect(rect);
         }
 
@@ -1031,12 +1041,19 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
                 rect.width(), callback, resultbounds
             );
         } else {
+            kFontMetrics fm;
+
             CachedWordsList cache;
             cache.reserve(256);
+
             CacheLayoutCallback callback(cache);
+
+            bool ellipses = (properties->flags & kTextFlags::Ellipses) != 0;
+
             kSize size = TextLayout(
                 p_impl, text, count, font, properties,
-                rect.width(), callback, resultbounds
+                rect.width(), callback, resultbounds,
+                ellipses ? &fm : nullptr
             );
 
             kSize alignboundssize;
@@ -1052,6 +1069,13 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
                 case kTextVerticalAlignment::Bottom:
                     verticaloffset = alignboundssize.height - size.height;
                     break;
+            }
+
+            kScalar ellipseswidth = 0;
+            if (ellipses) {
+                kGlyphMetrics gm;
+                p_impl->GetGlyphMetrics(font, '.', '.', &gm);
+                ellipseswidth = gm.advance * 3;
             }
 
             size_t cw = 0;
@@ -1081,19 +1105,75 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
                         if (cw < sz) {
                             size_t spacecount = cw - start - 1;
                             if (spacecount) {
-                                interwordspacing = (alignboundssize.width - width) / spacecount;
+                                interwordspacing =
+                                    (alignboundssize.width - width) /
+                                    spacecount;
                             }
                         }
                         break;
                 }
 
+                bool stopoutput = false;
                 kPoint cp = rect.getLeftTop() + kPoint(totaloffset, verticaloffset);
                 for (size_t n = start; n < cw; ++n) {
+                    const CachedWord &w = cache[n];
+
+                    if (ellipses) {
+                        // check if word crosses right bound (this is possible for
+                        // single line text)
+                        bool boundcrossing = (cp.x + w.position.x + w.width) > rect.right;
+
+                        kScalar nextrowbottom =
+                            cp.y + w.position.y + fm.height * 2 +
+                            fm.linegap + properties->interval;
+
+                        // check if this word is last word in a row and next row
+                        // can't fit in bounds (so ellipses should be painted)
+                        bool lastword = n == (cw - 1) && nextrowbottom > rect.bottom;
+
+                        if (boundcrossing || lastword) {
+                            // output word glyphs one by one while there's enough space
+                            // to fit ellipses after word
+                            cp += w.position;
+
+                            if ((cp.x + w.width + ellipseswidth) < rect.right) {
+                                p_impl->Text(
+                                    cp, w.text, int(w.count),
+                                    font, brush, kTextOrigin::Top
+                                );
+                                cp.x += w.width;
+                            } else {
+                                for (size_t c = 0; c < w.count; ++c) {
+                                    kGlyphMetrics gm;
+                                    size_t glyph = w.text[c];
+                                    p_impl->GetGlyphMetrics(font, glyph, glyph, &gm);
+
+                                    if ((cp.x + gm.advance) > (rect.right - ellipseswidth)) {
+                                        break;
+                                    }
+
+                                    p_impl->Text(cp, w.text + c, 1, font, brush, kTextOrigin::Top);
+
+                                    cp.x += gm.advance;
+                                }
+                            }
+
+                            p_impl->Text(cp, "...", 3, font, brush, kTextOrigin::Top);
+
+                            stopoutput = true;
+                            break;
+                        }
+                    }
+
                     p_impl->Text(
-                        cp + cache[n].position , cache[n].text, int(cache[n].count),
+                        cp + w.position , w.text, int(w.count),
                         font, brush, kTextOrigin::Top
                     );
                     cp.x += interwordspacing;
+                }
+
+                if (stopoutput) {
+                    break;
                 }
 
                 if (cw < sz) {
@@ -1102,7 +1182,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *
             }
         }
 
-        if (strictbounds) {
+        if (cliptobounds) {
             p_impl->EndClippedDrawing();
         }
     }
