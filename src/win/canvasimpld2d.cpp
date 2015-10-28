@@ -796,7 +796,7 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
     }
 }
 
-kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *font)
+kSize kCanvasImplD2D::TextSize(const char *text, size_t count, const kFontBase *font)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
     wstring t = convert.from_bytes(text, text + count);
@@ -831,12 +831,10 @@ kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *fon
     return result;
 }
 
-void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
+void kCanvasImplD2D::Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-    wstring t = count == -1 ?
-        convert.from_bytes(text) :
-        convert.from_bytes(text, text + count);
+    wstring t = convert.from_bytes(text, text + count);
 
     size_t length = t.length();
     size_t pos = 0;

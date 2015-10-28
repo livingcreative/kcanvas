@@ -168,8 +168,8 @@ namespace k_canvas
 
             virtual void GetFontMetrics(const kFontBase *font, kFontMetrics &metrics) = 0;
             virtual void GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics) = 0;
-            virtual kSize TextSize(const char *text, int count, const kFontBase *font) = 0;
-            virtual void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) = 0;
+            virtual kSize TextSize(const char *text, size_t count, const kFontBase *font) = 0;
+            virtual void Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) = 0;
 
             virtual void BeginClippedDrawingByMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) = 0;
             virtual void BeginClippedDrawingByPath(const kPathImpl *clip, const kTransform &transform) = 0;
