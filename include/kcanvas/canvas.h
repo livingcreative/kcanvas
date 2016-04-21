@@ -626,6 +626,49 @@ namespace k_canvas
 
     /*
      -------------------------------------------------------------------------------
+     kCanvasClipper
+     -------------------------------------------------------------------------------
+        helper object for "safe" clipped drawing within {} block
+        automatically calls EndClippedDrawing when object goes out of scope
+    */
+    class kCanvasClipper
+    {
+    public:
+        kCanvasClipper(kCanvas &canvas, const kBitmap &mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp) :
+            p_canvas(canvas)
+        {
+            p_canvas.BeginClippedDrawing(mask, transform, xextend, yextend);
+        }
+
+        kCanvasClipper(kCanvas &canvas, const kPath &clip, const kTransform &transform = kTransform()) :
+            p_canvas(canvas)
+        {
+            p_canvas.BeginClippedDrawing(clip, transform);
+        }
+
+        kCanvasClipper(kCanvas &canvas, const kRect &clip) :
+            p_canvas(canvas)
+        {
+            p_canvas.BeginClippedDrawing(clip);
+        }
+
+        ~kCanvasClipper()
+        {
+            p_canvas.EndClippedDrawing();
+        }
+
+    private:
+        // this type of object can NOT be copied and reassigned to other
+        kCanvasClipper(const kCanvasClipper &source);
+        kCanvasClipper& operator=(const kCanvasClipper &source);
+
+    private:
+        kCanvas &p_canvas;
+    };
+
+
+    /*
+     -------------------------------------------------------------------------------
      kBitmapCanvas
      -------------------------------------------------------------------------------
         canvas object for painting to kBitmap object
