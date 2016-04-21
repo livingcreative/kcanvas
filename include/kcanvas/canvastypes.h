@@ -127,7 +127,7 @@ namespace k_canvas
         uint8_t r, g, b, a;
 
         inline kColor();
-        inline kColor(const kColor &source, uint8_t _a);
+        inline kColor(const kColor source, uint8_t _a);
         inline kColor(uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a = 255);
 
         inline kColor inverse() const;
@@ -137,7 +137,7 @@ namespace k_canvas
         inline bool operator<(const kColor color) const;
 
         // make kColor object from HSL values
-        //      in integer ranges (0 - 360 for hue and 0 - 100 for saturation and lightness )
+        //      in integer ranges (0 - 360 for hue and 0 - 100 for saturation and lightness)
         static inline kColor fromHSL(int hue, int saturation, int lightness);
         //      in float ranges (all values from 0 to 1)
         static kColor fromHSL(kScalar hue, kScalar saturation, kScalar lightness);
@@ -368,15 +368,38 @@ namespace k_canvas
         uint32_t p_value;
     };
 
-    // kTextSizeProperties
-    //      properties for text measurement
-    struct kTextSizeProperties
+    // kTextPropertiesBase
+    //      common properties for text measurement and output
+    //      not used directly by API
+    struct kTextPropertiesBase
     {
         kTextFlags flags;
         kScalar    interval;
         kScalar    indent;
         kScalar    defaulttabwidth;
-        kSize      bounds;
+    };
+
+    // kTextSizeProperties
+    //      properties for text measurement
+    struct kTextSizeProperties : public kTextPropertiesBase
+    {
+        kSize bounds;
+
+        static kTextSizeProperties construct(
+            kTextFlags flags = 0,
+            kScalar interval = 0, kScalar indent = 0, kScalar defaulttabwidth = 0,
+            const kSize &bounds = kSize()
+        )
+        {
+            kTextSizeProperties result;
+            result.flags           = flags;
+            result.interval        = interval;
+            result.indent          = indent;
+            result.defaulttabwidth = defaulttabwidth;
+            result.bounds          = bounds;
+
+            return result;
+        }
     };
 
     // kTextHorizontalAlignment
@@ -400,14 +423,28 @@ namespace k_canvas
 
     // kTextOutProperties
     //      properties for text rendering
-    struct kTextOutProperties
+    struct kTextOutProperties : public kTextPropertiesBase
     {
-        kTextFlags               flags;
-        kScalar                  interval;
-        kScalar                  indent;
-        kScalar                  defaulttabwidth;
         kTextHorizontalAlignment horzalign;
         kTextVerticalAlignment   vertalign;
+
+        static kTextOutProperties construct(
+            kTextFlags flags = 0,
+            kScalar interval = 0, kScalar indent = 0, kScalar defaulttabwidth = 0,
+            kTextHorizontalAlignment horzalign = kTextHorizontalAlignment::Left,
+            kTextVerticalAlignment vertalign = kTextVerticalAlignment::Top
+        )
+        {
+            kTextOutProperties result;
+            result.flags           = flags;
+            result.interval        = interval;
+            result.indent          = indent;
+            result.defaulttabwidth = defaulttabwidth;
+            result.horzalign       = horzalign;
+            result.vertalign       = vertalign;
+
+            return result;
+        }
     };
 
 
@@ -418,7 +455,7 @@ namespace k_canvas
         r(0), g(0), b(0), a(255)
     {}
 
-    kColor::kColor(const kColor &source, uint8_t _a) :
+    kColor::kColor(const kColor source, uint8_t _a) :
         r(source.r), g(source.g), b(source.b), a(_a)
     {}
 

@@ -64,7 +64,7 @@ static inline D2D1_ELLIPSE r2eD2D(const kRect &rect)
     return el;
 }
 
-static inline D2D1_COLOR_F c2c(const kColor &color)
+static inline D2D1_COLOR_F c2c(const kColor color)
 {
     D2D1_COLOR_F clr;
     kColorReal colorf(color);

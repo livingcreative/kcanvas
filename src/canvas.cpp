@@ -1,4 +1,4 @@
-/*
+﻿/*
         KCANVAS PROJECT
 
     Common 2D graphics API abstraction with multiple back-end support
@@ -61,6 +61,17 @@ kStroke::kStroke(
 kStroke::~kStroke()
 {}
 
+kStroke::kStroke(const kStroke &source) :
+    kStrokeBase(source)
+{}
+
+kStroke& kStroke::operator=(const kStroke &source)
+{
+    p_data = source.p_data;
+    AssignResource(source);
+    return *this;
+}
+
 
 /*
  -------------------------------------------------------------------------------
@@ -68,7 +79,7 @@ kStroke::~kStroke()
  -------------------------------------------------------------------------------
 */
 
-kGradient::kGradient(const kColor &start, const kColor &end, kExtendType extend) :
+kGradient::kGradient(const kColor start, const kColor end, kExtendType extend) :
     p_impl(CanvasFactory::CreateGradient())
 {
     kGradientStop stops[2] = {
@@ -102,7 +113,7 @@ kPen::kPen()
     p_data.p_brush = nullptr;
 }
 
-kPen::kPen(const kColor &color, kScalar width, kStrokeStyle style, const kScalar *strokes, size_t count)
+kPen::kPen(const kColor color, kScalar width, kStrokeStyle style, const kScalar *strokes, size_t count)
 {
     // stroke style and brush created implicitly
     kBrush brush(color);
@@ -113,20 +124,26 @@ kPen::kPen(const kColor &color, kScalar width, kStrokeStyle style, const kScalar
     p_data.p_brush = brush.getResource();
 }
 
-kPen::kPen(const kColor &color, kScalar width, const kStroke *stroke)
+kPen::kPen(const kColor color, kScalar width, const kStroke &stroke)
 {
     kBrush brush(color);
 
     p_data.p_width = width;
     p_data.p_brush = brush.getResource();
-    p_data.p_stroke = stroke->getResource();
+    p_data.p_stroke = stroke.getResource();
 }
 
-kPen::kPen(const kBrush &brush, kScalar width, const kStroke *stroke)
+kPen::kPen(const kBrush &brush, kScalar width, const kStroke &stroke)
 {
     p_data.p_width = width;
     p_data.p_brush = brush.getResource();
-    p_data.p_stroke = stroke->getResource();
+    p_data.p_stroke = stroke.getResource();
+}
+
+kPen::~kPen()
+{
+    ReleaseResource(p_data.p_brush);
+    ReleaseResource(p_data.p_stroke);
 }
 
 kPen::kPen(const kPen &source) :
@@ -140,10 +157,16 @@ kPen::kPen(const kPen &source) :
     }
 }
 
-kPen::~kPen()
+kPen& kPen::operator=(const kPen &source)
 {
-    ReleaseResource(p_data.p_brush);
-    ReleaseResource(p_data.p_stroke);
+    p_data.p_width = source.p_data.p_width;
+
+    AssignReferencedResource(source.p_data.p_stroke, p_data.p_stroke);
+    AssignReferencedResource(source.p_data.p_brush, p_data.p_brush);
+
+    AssignResource(source);
+
+    return *this;
 }
 
 
@@ -160,7 +183,7 @@ kBrush::kBrush()
     p_data.p_bitmap = nullptr;
 }
 
-kBrush::kBrush(const kColor &color)
+kBrush::kBrush(const kColor color)
 {
     p_data.p_style = kBrushStyle::Solid;
     p_data.p_color = color;
@@ -189,14 +212,20 @@ kBrush::kBrush(const kPoint &center, const kPoint &offset, const kSize &radius, 
     p_data.p_bitmap = nullptr;
 }
 
-kBrush::kBrush(kExtendType xextend, kExtendType yextend, const kBitmap *bitmap)
+kBrush::kBrush(kExtendType xextend, kExtendType yextend, const kBitmap &bitmap)
 {
     p_data.p_style = kBrushStyle::Bitmap;
     p_data.p_gradient = nullptr;
     p_data.p_xextend = xextend;
     p_data.p_yextend = yextend;
-    p_data.p_bitmap = bitmap->p_impl;
+    p_data.p_bitmap = bitmap.p_impl;
     p_data.p_bitmap->addref();
+}
+
+kBrush::~kBrush()
+{
+    ReleaseResource(p_data.p_gradient);
+    ReleaseResource(p_data.p_bitmap);
 }
 
 kBrush::kBrush(const kBrush &source) :
@@ -210,10 +239,23 @@ kBrush::kBrush(const kBrush &source) :
     }
 }
 
-kBrush::~kBrush()
+kBrush& kBrush::operator=(const kBrush &source)
 {
-    ReleaseResource(p_data.p_gradient);
-    ReleaseResource(p_data.p_bitmap);
+    p_data.p_style    = source.p_data.p_style;
+    p_data.p_color    = source.p_data.p_color;
+    p_data.p_start    = source.p_data.p_start;
+    p_data.p_end      = source.p_data.p_end;
+    p_data.p_radius   = source.p_data.p_radius;
+    p_data.p_xextend  = source.p_data.p_xextend;
+    p_data.p_yextend  = source.p_data.p_yextend;
+    p_data.p_gradient = source.p_data.p_gradient;
+
+    AssignReferencedResource(source.p_data.p_gradient, p_data.p_gradient);
+    AssignReferencedResource(source.p_data.p_bitmap, p_data.p_bitmap);
+
+    AssignResource(source);
+
+    return *this;
 }
 
 
@@ -236,12 +278,19 @@ kFont::kFont(const char *facename, kScalar size, uint32_t style)
     p_data.p_style = style;
 }
 
-//kFont::kFont(const kFont &source) :
-//    kFontBase(source)
-//{}
-
 kFont::~kFont()
 {}
+
+kFont::kFont(const kFont &source) :
+    kFontBase(source)
+{}
+
+kFont& kFont::operator=(const kFont &source)
+{
+    p_data = source.p_data;
+    AssignResource(source);
+    return *this;
+}
 
 
 // helper routine for converting arc to set of bezier segments
@@ -363,12 +412,10 @@ void kPath::PolyBezierTo(const kPoint *points, size_t count)
     p_impl->PolyBezierTo(points, count);
 }
 
-void kPath::Text(const char *text, int count, const kFont *font, kTextOrigin origin)
+void kPath::Text(const char *text, int count, const kFont &font, kTextOrigin origin)
 {
-    if (font) {
-        font->needResource();
-        p_impl->Text(text, count, font, origin);
-    }
+    font.needResource();
+    p_impl->Text(text, count, &font, origin);
 }
 
 void kPath::Close()
@@ -568,20 +615,16 @@ kTextService::~kTextService()
     delete p_impl;
 }
 
-void kTextService::GetFontMetrics(const kFont *font, kFontMetrics &metrics)
+void kTextService::GetFontMetrics(const kFont &font, kFontMetrics &metrics)
 {
-    if (font) {
-        font->needResource();
-        p_impl->GetFontMetrics(font, metrics);
-    }
+    font.needResource();
+    p_impl->GetFontMetrics(&font, metrics);
 }
 
-void kTextService::GetGlyphMetrics(const kFont *font, size_t first, size_t last, kGlyphMetrics *metrics)
+void kTextService::GetGlyphMetrics(const kFont &font, size_t first, size_t last, kGlyphMetrics *metrics)
 {
-    if (font) {
-        font->needResource();
-        p_impl->GetGlyphMetrics(font, first, last, metrics);
-    }
+    font.needResource();
+    p_impl->GetGlyphMetrics(&font, first, last, metrics);
 }
 
 template <typename T, typename C>
@@ -734,36 +777,34 @@ public:
     void operator()(LAYOUT_CALLBACK_PARAMS) const {}
 };
 
-kSize kTextService::TextSize(const char *text, int count, const kFont *font, const kTextSizeProperties *properties, kRect *bounds)
+kSize kTextService::TextSize(const char *text, int count, const kFont &font, const kTextSizeProperties *properties, kRect *bounds)
 {
     kSize result;
 
-    if (font) {
-        if (count == -1) {
-            count = int(strlen(text));
-        }
-        if (count == 0) {
-            return result;
-        }
+    if (count == -1) {
+        count = int(strlen(text));
+    }
+    if (count == 0) {
+        return result;
+    }
 
-        font->needResource();
+    font.needResource();
 
-        NullLayoutCallback callback;
-        kRect resultbounds;
-        result = TextLayout(
-            p_impl, text, count, font, properties,
-            properties ? properties->bounds.width : 1e37f,
-            callback, resultbounds
-        );
+    NullLayoutCallback callback;
+    kRect resultbounds;
+    result = TextLayout(
+        p_impl, text, count, &font, properties,
+        properties ? properties->bounds.width : 1e37f,
+        callback, resultbounds
+    );
 
-        if (properties && properties->flags & kTextFlags::StrictBounds) {
-            result.width = umin(result.width, properties->bounds.width);
-            result.height = umin(result.height, properties->bounds.height);
-        }
+    if (properties && properties->flags & kTextFlags::StrictBounds) {
+        result.width = umin(result.width, properties->bounds.width);
+        result.height = umin(result.height, properties->bounds.height);
+    }
 
-        if (bounds) {
-            *bounds = resultbounds;
-        }
+    if (bounds) {
+        *bounds = resultbounds;
     }
 
     return result;
@@ -801,23 +842,19 @@ void kCanvas::needResources(const kPen *pen, const kBrush *brush)
     }
 }
 
-void kCanvas::Line(const kPoint &a, const kPoint &b, const kPen *pen)
+void kCanvas::Line(const kPoint &a, const kPoint &b, const kPen &pen)
 {
-    if (pen) {
-        pen->needResource();
-        p_impl->Line(a, b, pen);
-    }
+    pen.needResource();
+    p_impl->Line(a, b, &pen);
 }
 
-void kCanvas::Bezier(const kPoint &p1, const kPoint &p2, const kPoint &p3, const kPoint &p4, const kPen *pen)
+void kCanvas::Bezier(const kPoint &p1, const kPoint &p2, const kPoint &p3, const kPoint &p4, const kPen &pen)
 {
-    if (pen) {
-        pen->needResource();
-        p_impl->Bezier(p1, p2, p3, p4, pen);
-    }
+    pen.needResource();
+    p_impl->Bezier(p1, p2, p3, p4, &pen);
 }
 
-void kCanvas::Arc(const kRect &rect, kScalar start, kScalar end, const kPen *pen)
+void kCanvas::Arc(const kRect &rect, kScalar start, kScalar end, const kPen &pen)
 {
     kPoint points[16];
     size_t count;
@@ -825,20 +862,16 @@ void kCanvas::Arc(const kRect &rect, kScalar start, kScalar end, const kPen *pen
     PolyBezier(points, count, pen);
 }
 
-void kCanvas::PolyLine(const kPoint *points, size_t count, const kPen *pen)
+void kCanvas::PolyLine(const kPoint *points, size_t count, const kPen &pen)
 {
-    if (pen) {
-        pen->needResource();
-        p_impl->PolyLine(points, count, pen);
-    }
+    pen.needResource();
+    p_impl->PolyLine(points, count, &pen);
 }
 
-void kCanvas::PolyBezier(const kPoint *points, size_t count, const kPen *pen)
+void kCanvas::PolyBezier(const kPoint *points, size_t count, const kPen &pen)
 {
-    if (pen) {
-        pen->needResource();
-        p_impl->PolyBezier(points, count, pen);
-    }
+    pen.needResource();
+    p_impl->PolyBezier(points, count, &pen);
 }
 
 void kCanvas::Rectangle(const kRect &rect, const kPen *pen, const kBrush *brush)
@@ -871,82 +904,74 @@ void kCanvas::PolygonBezier(const kPoint *points, size_t count, const kPen *pen,
     p_impl->PolygonBezier(points, count, pen, brush);
 }
 
-void kCanvas::DrawPath(const kPath *path, const kPen *pen, const kBrush *brush)
+void kCanvas::DrawPath(const kPath &path, const kPen *pen, const kBrush *brush)
 {
     needResources(pen, brush);
-    p_impl->DrawPath(path->p_impl, pen, brush);
+    p_impl->DrawPath(path.p_impl, pen, brush);
 }
 
-void kCanvas::DrawPath(const kPath *path, const kPen *pen, const kBrush *brush, const kPoint &offset)
+void kCanvas::DrawPath(const kPath &path, const kPen *pen, const kBrush *brush, const kPoint &offset)
 {
     kTransform tfm;
     tfm.translate(offset.x, offset.y);
     DrawPath(path, pen, brush, tfm);
 }
 
-void kCanvas::DrawPath(const kPath *path, const kPen *pen, const kBrush *brush, const kTransform &transform)
+void kCanvas::DrawPath(const kPath &path, const kPen *pen, const kBrush *brush, const kTransform &transform)
 {
     needResources(pen, brush);
-    p_impl->DrawPath(path->p_impl, pen, brush, transform);
+    p_impl->DrawPath(path.p_impl, pen, brush, transform);
 }
 
-void kCanvas::DrawBitmap(const kBitmap *bitmap, const kPoint &origin, kScalar sourcealpha)
+void kCanvas::DrawBitmap(const kBitmap &bitmap, const kPoint &origin, kScalar sourcealpha)
 {
-    kSize sz(kScalar(bitmap->width()), kScalar(bitmap->height()));
-    p_impl->DrawBitmap(bitmap->p_impl, origin, sz, kPoint(), sz, sourcealpha);
+    kSize sz = bitmap.size();
+    p_impl->DrawBitmap(bitmap.p_impl, origin, sz, kPoint(), sz, sourcealpha);
 }
 
-void kCanvas::DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kPoint &source, const kSize &size, kScalar sourcealpha)
+void kCanvas::DrawBitmap(const kBitmap &bitmap, const kPoint &origin, const kPoint &source, const kSize &size, kScalar sourcealpha)
 {
-    p_impl->DrawBitmap(bitmap->p_impl, origin, size, source, size, sourcealpha);
+    p_impl->DrawBitmap(bitmap.p_impl, origin, size, source, size, sourcealpha);
 }
 
-void kCanvas::DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha)
+void kCanvas::DrawBitmap(const kBitmap &bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha)
 {
-    p_impl->DrawBitmap(bitmap->p_impl, origin, destsize, source, sourcesize, sourcealpha);
+    p_impl->DrawBitmap(bitmap.p_impl, origin, destsize, source, sourcesize, sourcealpha);
 }
 
-void kCanvas::DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin)
+void kCanvas::DrawMask(const kBitmap &mask, kBrush &brush, const kPoint &origin)
 {
-    if (brush) {
-        brush->needResource();
-        kSize sz(kScalar(mask->width()), kScalar(mask->height()));
-        p_impl->DrawMask(mask->p_impl, brush, origin, sz, kPoint(), sz);
+    brush.needResource();
+    kSize sz = mask.size();
+    p_impl->DrawMask(mask.p_impl, &brush, origin, sz, kPoint(), sz);
+}
+
+void kCanvas::DrawMask(const kBitmap &mask, kBrush &brush, const kPoint &origin, const kPoint &source, const kSize &size)
+{
+    brush.needResource();
+    p_impl->DrawMask(mask.p_impl, &brush, origin, size, source, size);
+}
+
+void kCanvas::DrawMask(const kBitmap &mask, kBrush &brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize)
+{
+    brush.needResource();
+    p_impl->DrawMask(mask.p_impl, &brush, origin, destsize, source, sourcesize);
+}
+
+void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont &font, const kBrush &brush, kTextOrigin origin)
+{
+    if (count == -1) {
+        count = int(strlen(text));
     }
-}
 
-void kCanvas::DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin, const kPoint &source, const kSize &size)
-{
-    if (brush) {
-        brush->needResource();
-        p_impl->DrawMask(mask->p_impl, brush, origin, size, source, size);
+    if (count == 0) {
+        return;
     }
-}
 
-void kCanvas::DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize)
-{
-    if (brush) {
-        brush->needResource();
-        p_impl->DrawMask(mask->p_impl, brush, origin, destsize, source, sourcesize);
-    }
-}
+    brush.needResource();
+    font.needResource();
 
-void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush, kTextOrigin origin)
-{
-    if (brush && font) {
-        if (count == -1) {
-            count = int(strlen(text));
-        }
-
-        if (count == 0) {
-            return;
-        }
-
-        brush->needResource();
-        font->needResource();
-
-        p_impl->Text(p, text, count, font, brush, origin);
-    }
+    p_impl->Text(p, text, count, &font, &brush, origin);
 }
 
 class RenderLayoutCallback
@@ -1005,213 +1030,211 @@ private:
     CachedWordsList &p_cache;
 };
 
-void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties)
+void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &font, const kBrush &brush, const kTextOutProperties *properties)
 {
-    if (brush && font) {
-        if (count == -1) {
-            count = int(strlen(text));
+    if (count == -1) {
+        count = int(strlen(text));
+    }
+    if (count == 0) {
+        return;
+    }
+
+    brush.needResource();
+    font.needResource();
+
+    bool cliptobounds = properties ?
+        (properties->flags & kTextFlags::ClipToBounds) != 0 : false;
+
+    if (cliptobounds) {
+        p_impl->BeginClippedDrawingByRect(rect);
+    }
+
+    kRect resultbounds;
+
+    bool directoutput =
+        properties == nullptr || (
+            properties->horzalign == kTextHorizontalAlignment::Left &&
+            properties->vertalign == kTextVerticalAlignment::Top &&
+            (properties->flags & kTextFlags::Ellipses) == 0
+        );
+
+    if (directoutput) {
+        RenderLayoutCallback callback(rect.getLeftTop(), p_impl, &font, &brush);
+        TextLayout(
+            p_impl, text, count, &font, properties,
+            rect.width(), callback, resultbounds
+        );
+    } else {
+        kFontMetrics fm;
+
+        CachedWordsList cache;
+        cache.reserve(256);
+
+        CacheLayoutCallback callback(cache);
+
+        bool ellipses = (properties->flags & kTextFlags::Ellipses) != 0;
+
+        kSize size = TextLayout(
+            p_impl, text, count, &font, properties,
+            rect.width(), callback, resultbounds,
+            ellipses ? &fm : nullptr
+        );
+
+        kSize alignboundssize;
+        alignboundssize.width = umax(size.width, rect.width());
+        alignboundssize.height = umax(size.height, rect.height());
+
+        kScalar verticaloffset = 0;
+        switch (properties->vertalign) {
+            case kTextVerticalAlignment::Middle:
+                verticaloffset = alignboundssize.height * 0.5f - size.height * 0.5f;
+                break;
+
+            case kTextVerticalAlignment::Bottom:
+                verticaloffset = alignboundssize.height - size.height;
+                break;
         }
-        if (count == 0) {
-            return;
+
+        kScalar ellipseswidth = 0;
+        if (ellipses) {
+            kGlyphMetrics gm;
+            p_impl->GetGlyphMetrics(&font, '.', '.', &gm);
+            ellipseswidth = gm.advance * 3;
         }
 
-        brush->needResource();
-        font->needResource();
-
-        bool cliptobounds = properties ?
-            (properties->flags & kTextFlags::ClipToBounds) != 0 : false;
-
-        if (cliptobounds) {
-            p_impl->BeginClippedDrawingByRect(rect);
-        }
-
-        kRect resultbounds;
-
-        bool directoutput =
-            properties == nullptr || (
-                properties->horzalign == kTextHorizontalAlignment::Left &&
-                properties->vertalign == kTextVerticalAlignment::Top &&
-                (properties->flags & kTextFlags::Ellipses) == 0
-            );
-
-        if (directoutput) {
-            RenderLayoutCallback callback(rect.getLeftTop(), p_impl, font, brush);
-            TextLayout(
-                p_impl, text, count, font, properties,
-                rect.width(), callback, resultbounds
-            );
-        } else {
-            kFontMetrics fm;
-
-            CachedWordsList cache;
-            cache.reserve(256);
-
-            CacheLayoutCallback callback(cache);
-
-            bool ellipses = (properties->flags & kTextFlags::Ellipses) != 0;
-
-            kSize size = TextLayout(
-                p_impl, text, count, font, properties,
-                rect.width(), callback, resultbounds,
-                ellipses ? &fm : nullptr
-            );
-
-            kSize alignboundssize;
-            alignboundssize.width = umax(size.width, rect.width());
-            alignboundssize.height = umax(size.height, rect.height());
-
-            kScalar verticaloffset = 0;
-            switch (properties->vertalign) {
-                case kTextVerticalAlignment::Middle:
-                    verticaloffset = alignboundssize.height * 0.5f - size.height * 0.5f;
-                    break;
-
-                case kTextVerticalAlignment::Bottom:
-                    verticaloffset = alignboundssize.height - size.height;
-                    break;
+        size_t cw = 0;
+        size_t sz = cache.size();
+        kScalar y = 0;
+        while (cw < sz) {
+            // search for row bounds
+            size_t start = cw;
+            while (cw < sz && !cache[cw].newline) {
+                ++cw;
             }
 
-            kScalar ellipseswidth = 0;
-            if (ellipses) {
-                kGlyphMetrics gm;
-                p_impl->GetGlyphMetrics(font, '.', '.', &gm);
-                ellipseswidth = gm.advance * 3;
-            }
+            kScalar width = cache[cw - 1].position.x + cache[cw - 1].width;
 
-            size_t cw = 0;
-            size_t sz = cache.size();
-            kScalar y = 0;
-            while (cw < sz) {
-                // search for row bounds
-                size_t start = cw;
-                while (cw < sz && !cache[cw].newline) {
-                    ++cw;
-                }
+            kScalar totaloffset = 0;
+            kScalar interwordspacing = 0;
 
-                kScalar width = cache[cw - 1].position.x + cache[cw - 1].width;
+            switch (properties->horzalign) {
+                case kTextHorizontalAlignment::Center:
+                    totaloffset = alignboundssize.width * 0.5f - width * 0.5f;
+                    break;
 
-                kScalar totaloffset = 0;
-                kScalar interwordspacing = 0;
+                case kTextHorizontalAlignment::Right:
+                    totaloffset = alignboundssize.width - width;
+                    break;
 
-                switch (properties->horzalign) {
-                    case kTextHorizontalAlignment::Center:
-                        totaloffset = alignboundssize.width * 0.5f - width * 0.5f;
-                        break;
-
-                    case kTextHorizontalAlignment::Right:
-                        totaloffset = alignboundssize.width - width;
-                        break;
-
-                    case kTextHorizontalAlignment::Justify:
-                        if (cw < sz) {
-                            size_t spacecount = cw - start - 1;
-                            if (spacecount) {
-                                interwordspacing =
-                                    (alignboundssize.width - width) /
-                                    spacecount;
-                            }
-                        }
-                        break;
-                }
-
-                kPoint cp = rect.getLeftTop() + kPoint(totaloffset, verticaloffset);
-
-                bool lasttextline = false;
-                if (ellipses) {
-                    // check if this line of text is last row and next row
-                    // can't fit in bounds (so ellipses should be painted)
-                    kScalar nextrowbottom =
-                        cp.y + y + fm.height * 2 + fm.linegap + properties->interval;
-                    lasttextline = nextrowbottom > rect.bottom;
-                }
-
-                bool stopoutput = false;
-                for (size_t n = start; n < cw; ++n) {
-                    const CachedWord &w = cache[n];
-
-                    if (ellipses) {
-                        // check if word crosses right bound (this is possible for
-                        // single line text or for adding ellipses on a last visible row)
-                        kScalar wordrightbound = cp.x + w.position.x + w.width;
-
-                        // if this is last visible line of text - adjust right bound to fit
-                        // ellipses
-                        if (lasttextline) {
-                            wordrightbound += ellipseswidth;
-                        }
-
-                        // check if word is last in a visible row
-                        bool lastword = lasttextline && n == (cw - 1);
-
-                        if (wordrightbound > rect.right || lastword) {
-                            cp += w.position;
-
-                            if ((cp.x + w.width + ellipseswidth) < rect.right) {
-                                p_impl->Text(
-                                    cp, w.text, w.count,
-                                    font, brush, kTextOrigin::Top
-                                );
-                                cp.x += w.width;
-                            } else {
-                                // measure word glyphs one by one while there's enough space
-                                // to fit ellipses after word, then paint fitted glyphs of the word
-                                size_t c = 0;
-                                kScalar x = cp.x;
-                                for (; c < w.count; ++c) {
-                                    kGlyphMetrics gm;
-                                    size_t glyph = w.text[c];
-                                    p_impl->GetGlyphMetrics(font, glyph, glyph, &gm);
-
-                                    if ((x + gm.advance) > (rect.right - ellipseswidth)) {
-                                        break;
-                                    }
-
-                                    x += gm.advance;
-                                }
-
-                                p_impl->Text(cp, w.text, c, font, brush, kTextOrigin::Top);
-                                cp.x = x;
-                            }
-
-                            p_impl->Text(cp, "...", 3, font, brush, kTextOrigin::Top);
-
-                            stopoutput = true;
-                            break;
+                case kTextHorizontalAlignment::Justify:
+                    if (cw < sz) {
+                        size_t spacecount = cw - start - 1;
+                        if (spacecount) {
+                            interwordspacing =
+                                (alignboundssize.width - width) /
+                                spacecount;
                         }
                     }
-
-                    p_impl->Text(
-                        cp + w.position , w.text, w.count,
-                        font, brush, kTextOrigin::Top
-                    );
-                    cp.x += interwordspacing;
-                }
-
-                if (stopoutput) {
                     break;
+            }
+
+            kPoint cp = rect.getLeftTop() + kPoint(totaloffset, verticaloffset);
+
+            bool lasttextline = false;
+            if (ellipses) {
+                // check if this line of text is last row and next row
+                // can't fit in bounds (so ellipses should be painted)
+                kScalar nextrowbottom =
+                    cp.y + y + fm.height * 2 + fm.linegap + properties->interval;
+                lasttextline = nextrowbottom > rect.bottom;
+            }
+
+            bool stopoutput = false;
+            for (size_t n = start; n < cw; ++n) {
+                const CachedWord &w = cache[n];
+
+                if (ellipses) {
+                    // check if word crosses right bound (this is possible for
+                    // single line text or for adding ellipses on a last visible row)
+                    kScalar wordrightbound = cp.x + w.position.x + w.width;
+
+                    // if this is last visible line of text - adjust right bound to fit
+                    // ellipses
+                    if (lasttextline) {
+                        wordrightbound += ellipseswidth;
+                    }
+
+                    // check if word is last in a visible row
+                    bool lastword = lasttextline && n == (cw - 1);
+
+                    if (wordrightbound > rect.right || lastword) {
+                        cp += w.position;
+
+                        if ((cp.x + w.width + ellipseswidth) < rect.right) {
+                            p_impl->Text(
+                                cp, w.text, w.count,
+                                &font, &brush, kTextOrigin::Top
+                            );
+                            cp.x += w.width;
+                        } else {
+                            // measure word glyphs one by one while there's enough space
+                            // to fit ellipses after word, then paint fitted glyphs of the word
+                            size_t c = 0;
+                            kScalar x = cp.x;
+                            for (; c < w.count; ++c) {
+                                kGlyphMetrics gm;
+                                size_t glyph = w.text[c];
+                                p_impl->GetGlyphMetrics(&font, glyph, glyph, &gm);
+
+                                if ((x + gm.advance) > (rect.right - ellipseswidth)) {
+                                    break;
+                                }
+
+                                x += gm.advance;
+                            }
+
+                            p_impl->Text(cp, w.text, c, &font, &brush, kTextOrigin::Top);
+                            cp.x = x;
+                        }
+
+                        p_impl->Text(cp, "...", 3, &font, &brush, kTextOrigin::Top);
+
+                        stopoutput = true;
+                        break;
+                    }
                 }
 
-                if (cw < sz) {
-                    cache[cw].newline = false;
-                    y += fm.height + fm.linegap + properties->interval;
-                }
+                p_impl->Text(
+                    cp + w.position , w.text, w.count,
+                    &font, &brush, kTextOrigin::Top
+                );
+                cp.x += interwordspacing;
+            }
+
+            if (stopoutput) {
+                break;
+            }
+
+            if (cw < sz) {
+                cache[cw].newline = false;
+                y += fm.height + fm.linegap + properties->interval;
             }
         }
+    }
 
-        if (cliptobounds) {
-            p_impl->EndClippedDrawing();
-        }
+    if (cliptobounds) {
+        p_impl->EndClippedDrawing();
     }
 }
 
-void kCanvas::BeginClippedDrawing(const kBitmap *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend)
+void kCanvas::BeginClippedDrawing(const kBitmap &mask, const kTransform &transform, kExtendType xextend, kExtendType yextend)
 {
-    p_impl->BeginClippedDrawingByMask(mask->p_impl, transform, xextend, yextend);
+    p_impl->BeginClippedDrawingByMask(mask.p_impl, transform, xextend, yextend);
 }
 
-void kCanvas::BeginClippedDrawing(const kPath *clip, const kTransform &transform)
+void kCanvas::BeginClippedDrawing(const kPath &clip, const kTransform &transform)
 {
-    p_impl->BeginClippedDrawingByPath(clip->p_impl, transform);
+    p_impl->BeginClippedDrawingByPath(clip.p_impl, transform);
 }
 
 void kCanvas::BeginClippedDrawing(const kRect &clip)
@@ -1268,10 +1291,10 @@ void kCanvas::PopTransform()
  -------------------------------------------------------------------------------
 */
 
-kBitmapCanvas::kBitmapCanvas(const kBitmap *target, const kRectInt *rect) :
+kBitmapCanvas::kBitmapCanvas(const kBitmap &target, const kRectInt *rect) :
     kCanvas()
 {
-    p_impl->BindToBitmap(target->p_impl, rect);
+    p_impl->BindToBitmap(target.p_impl, rect);
 }
 
 kBitmapCanvas::~kBitmapCanvas()
