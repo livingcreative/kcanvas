@@ -51,7 +51,7 @@ set(SOURCES
 
 # Windows build
 if (WIN32)
-	include(windows.cmake)
+	include(win/windows.cmake)
 endif ()
 
 add_library(kcanvas STATIC ${SOURCES} ${HEADERS})
