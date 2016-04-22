@@ -63,6 +63,36 @@ Result:
 
 Please visit [examples wiki page](https://github.com/livingcreative/kcanvas/wiki/Examples) for additional information and usage examples.
 
+## How to build
+kcanvas library source comes with CMake project included.
+> Currently only windows build available
+
+### Windows build
+You need [CMake](https://cmake.org) installed on your system to be able to generate Visual Studio solution to build kcanvas library.
+
+Create new directory where you want to download kcanvas library source. For this example let this directory be named `example`:
+```
+mkdir example
+cd example
+```
+Clone **kcanvas** repository:
+```
+git clone https://github.com/livingcreative/kcanvas.git kcanvas
+```
+Clone **kcommon** repository, by default kcanvas depends on kcommon headers:
+```
+git clone https://github.com/livingcreative/kcommon.git kcommon
+```
+Now you can create directory for build (it can be located anywhere you like, for current example it'll be inside our `example` directory) and generate Visual Studio solution:
+```
+mkdir build
+cd build
+cmake ..\kcanvas\src
+```
+Now you can open `kcanvas.sln` solution file and build it with Visual Studio. Resulting library files (`kcanvas.lib`) will be put under `lib\<Platform>\<Configuration>` subdirectory inside `kcanvas` source directory.
+
+By default kcanvas library builds with static MSVC runtime, to generate solution with dynamic MSVC runtime you can pass following option to cmake: `-Dmsvcruntime=dynamic`
+
 ## Copyright and licensing
 kcanvas 2D Graphics Library
 
