@@ -20,6 +20,7 @@
 #pragma once
 #include "canvastypes.h"     // all basic data types used by canvas and its objects
 #include "canvasresources.h" // internal resource object definitions
+#include <vector>
 
 
 // this empty defines are only for convenient hints to function parameters

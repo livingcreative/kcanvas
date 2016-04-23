@@ -14,8 +14,6 @@
 
 #pragma once
 #include "canvastypes.h"
-#include <string>
-#include <unordered_map>
 
 
 namespace k_canvas
