@@ -130,7 +130,7 @@ namespace k_canvas
         {
         public:
             virtual void Initialize(size_t width, size_t height, kBitmapFormat format) = 0;
-            virtual void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourceputch, void *data) = 0;
+            virtual void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourceputch, const void *data) = 0;
         };
 
 

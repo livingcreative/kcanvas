@@ -432,7 +432,7 @@ void kBitmapImplD2D::Initialize(size_t width, size_t height, kBitmapFormat forma
     P_RT->CreateBitmap(sz, nullptr, 0, props, &p_bitmap);
 }
 
-void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, void *data)
+void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, const void *data)
 {
     D2D1_SIZE_F size = p_bitmap->GetSize();
 

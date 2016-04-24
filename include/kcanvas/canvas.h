@@ -449,7 +449,7 @@ namespace k_canvas
         kSize size() const { return kSize(kScalar(p_width), kScalar(p_height)); }
         kBitmapFormat format() const { return p_format; }
 
-        void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, void *data);
+        void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, const void *data);
 
     private:
         // this type of object can NOT be copied and reassigned to other

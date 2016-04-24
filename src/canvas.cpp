@@ -454,7 +454,7 @@ kBitmap::~kBitmap()
     ReleaseResource(p_impl);
 }
 
-void kBitmap::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, void *data)
+void kBitmap::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, const void *data)
 {
     p_impl->Update(updaterect, sourceformat, sourcepitch, data);
 }

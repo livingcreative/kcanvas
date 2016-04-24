@@ -101,7 +101,7 @@ namespace k_canvas
             ~kBitmapImplD2D() override;
 
             void Initialize(size_t width, size_t height, kBitmapFormat format) override;
-            void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourceputch, void *data) override;
+            void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourceputch, const void *data) override;
 
         private:
             ID2D1Bitmap *p_bitmap;
