@@ -622,6 +622,7 @@ namespace k_canvas
 
     protected:
         std::vector<kTransform> p_transform_stack;
+        kTransform              p_transform;
     };
 
 

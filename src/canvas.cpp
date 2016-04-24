@@ -1249,38 +1249,28 @@ void kCanvas::EndClippedDrawing()
 
 void kCanvas::SetTransform(const kTransform &transform)
 {
-    kTransform t =
-        p_transform_stack.size() > 1 ?
-        p_transform_stack[p_transform_stack.size() - 1] * transform :
-        transform;
-
-    if (p_transform_stack.size()) {
-        p_transform_stack.back() = t;
-    }
-    p_impl->SetTransform(t);
-}
-
-void kCanvas::PushTransform(const kTransform &transform)
-{
-    kTransform t =
+    p_transform =
         p_transform_stack.size() ?
         p_transform_stack.back() * transform :
         transform;
 
-    p_transform_stack.push_back(t);
+    p_impl->SetTransform(p_transform);
+}
 
-    p_impl->SetTransform(t);
+void kCanvas::PushTransform(const kTransform &transform)
+{
+    p_transform_stack.push_back(p_transform);
+
+    p_transform = p_transform * transform;
+    p_impl->SetTransform(p_transform);
 }
 
 void kCanvas::PopTransform()
 {
     if (p_transform_stack.size()) {
+        p_transform = p_transform_stack.back();
+        p_impl->SetTransform(p_transform);
         p_transform_stack.pop_back();
-        p_impl->SetTransform(
-            p_transform_stack.size() ?
-                p_transform_stack.back() :
-                kTransform()
-        );
     }
 }
 
