@@ -6,6 +6,8 @@ kcanvas is easy to use C++ API for rendering 2D graphics. Its main purpose is to
 > This project is under development now, so not all of its features are implemented and not all   
 > platforms are fully supported
 
+[Windows demo and examples binaries](https://raw.githubusercontent.com/wiki/livingcreative/kcanvas/data/kcanvasexamples_win.zip)
+
 ## What it does
 kcanvas API is able to render 2D vector and raster graphics. You can stroke and fill different simple and complex shapes with many different styles, render text with different fonts available in your system. Here is sample image which shows what you can render with help of kcanvas API:   
 ![kcanvas demo image](https://raw.githubusercontent.com/livingcreative/kcanvas/master/demo.jpg)
