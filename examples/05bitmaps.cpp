@@ -36,7 +36,7 @@ void Initialize()
 
     // Load color bitmap with alpha channel
     {
-        BitmapData data("../examples/media/stone.bmp");
+        BitmapData data("../../examples/media/stone.bmp");
         if (data.bpp() == 24) {
             bitmap = new kBitmap(data.width(), data.height(), kBitmapFormat::Color32BitAlphaPremultiplied);
             bitmap->Update(nullptr, kBitmapFormat::Color32BitAlphaPremultiplied, data.pitch(), data.data());
@@ -45,7 +45,7 @@ void Initialize()
 
     // Load mask (monochrome) bitmap
     {
-        BitmapData data("../examples/media/mask.bmp");
+        BitmapData data("../../examples/media/mask.bmp");
         if (data.bpp() == 8) {
             mask = new kBitmap(data.width(), data.height(), kBitmapFormat::Mask8Bit);
             mask->Update(nullptr, kBitmapFormat::Mask8Bit, data.pitch(), data.data());

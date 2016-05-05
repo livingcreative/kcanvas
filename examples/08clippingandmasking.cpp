@@ -35,7 +35,7 @@ void Initialize()
 
     // Load mask (monochrome) bitmap
     {
-        BitmapData data("../examples/media/mask.bmp");
+        BitmapData data("../../examples/media/mask.bmp");
         if (data.bpp() == 8) {
             mask = new kBitmap(data.width(), data.height(), kBitmapFormat::Mask8Bit);
             mask->Update(nullptr, kBitmapFormat::Mask8Bit, data.pitch(), data.data());

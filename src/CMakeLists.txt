@@ -21,14 +21,6 @@ set(INCLUDE_PATH ../include/kcanvas)
 # relative path to library build destination
 set(LIBRARY_OUT_PATH ${PROJECT_SOURCE_DIR}/../lib)
 
-# public include directories
-include_directories(${INCLUDE_PATH})
-
-# kcommon dependencies
-if (NOT kcommon)
-	set(kcommon ../../kcommon/include)
-endif ()
-include_directories(${kcommon})
 
 set(HEADERS
 	# public include headers
@@ -54,9 +46,34 @@ if (WIN32)
 	include(win/windows.cmake)
 endif ()
 
+
+# MSVC specific build
+if (MSVC)
+	include(msvc.cmake)
+endif ()
+
+
+# public include directories
+include_directories(${INCLUDE_PATH})
+
+# kcommon dependencies
+if (NOT kcommon)
+	set(kcommon ../../kcommon/include)
+endif ()
+include_directories(${kcommon})
+
+
 add_library(kcanvas STATIC ${SOURCES} ${HEADERS})
 set_target_properties(
 	kcanvas
 	PROPERTIES
 	ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUT_PATH}
 )
+if (LIB_PDB_DIR)
+	set_target_properties(
+		kcanvas
+		PROPERTIES
+		PDB_OUTPUT_DIRECTORY ${LIB_PDB_DIR}
+		PDB_NAME "kcanvas_vc$(PlatformToolsetVersion).pdb"
+	)
+endif ()
