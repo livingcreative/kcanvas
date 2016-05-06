@@ -3,7 +3,7 @@
 
     Common 2D graphics API abstraction with multiple back-end support
 
-    (c) livingcreative, 2015
+    (c) livingcreative, 2015 - 2016
 
     https://github.com/livingcreative/kcanvas
 
@@ -945,6 +945,10 @@ kGDIPlusStroke::~kGDIPlusStroke()
  -------------------------------------------------------------------------------
 */
 
+static const REAL dashpattern[] = { 2.0f, 2.0f };
+static const REAL dashdotpattern[] = { 2.0f, 1.0f, 1.0f, 1.0f };
+static const REAL dashdotdotpattern[] = { 2.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+
 kGDIPlusPen::kGDIPlusPen(const PenData &pen) :
     p_pen(nullptr)
 {
@@ -973,17 +977,23 @@ kGDIPlusPen::kGDIPlusPen(const PenData &pen) :
                 p_pen->SetDashStyle(DashStyleDot);
                 break;
 
-            case kStrokeStyle::Dash:
-                p_pen->SetDashStyle(DashStyleDash);
+            case kStrokeStyle::Dash: {
+                p_pen->SetDashStyle(DashStyleCustom);
+                p_pen->SetDashPattern(dashpattern, 2);
                 break;
+            }
 
-            case kStrokeStyle::DashDot:
-                p_pen->SetDashStyle(DashStyleDashDot);
+            case kStrokeStyle::DashDot: {
+                p_pen->SetDashStyle(DashStyleCustom);
+                p_pen->SetDashPattern(dashdotpattern, 4);
                 break;
+            }
 
-            case kStrokeStyle::DashDotDot:
-                p_pen->SetDashStyle(DashStyleDashDotDot);
+            case kStrokeStyle::DashDotDot: {
+                p_pen->SetDashStyle(DashStyleCustom);
+                p_pen->SetDashPattern(dashdotdotpattern, 6);
                 break;
+            }
 
             case kStrokeStyle::Custom:
                 p_pen->SetDashStyle(DashStyleCustom);
