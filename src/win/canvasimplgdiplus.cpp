@@ -513,19 +513,22 @@ void kCanvasImplGDIPlus::PolygonBezier(const kPoint *points, size_t count, const
     }
 
     if (pen_not_empty) {
-        // TODO: replace with static point cache
-        // TODO: bugs with closing curve
-        PointF *pts = new PointF[count + 1];
+        // TODO: this seems not very optimal, can't find the way to properly close
+        //       bezier curve without making a path
 
-        for (size_t p = 0; p < count; ++p) {
-            pts[p].X = points[p].x;
-            pts[p].Y = points[p].y;
-        }
+        GraphicsPath path;
+        path.AddBeziers(reinterpret_cast<const PointF*>(points), INT(count) - 2);
 
-        pts[count] = pts[0];
+        path.AddBezier(
+            p2pGDIP(points[count - 3]),
+            p2pGDIP(points[count - 2]),
+            p2pGDIP(points[count - 1]),
+            p2pGDIP(points[0])
+        );
 
-        g->DrawBeziers(_pen, pts, INT(count) + 1);
-        delete[] pts;
+        path.CloseFigure();
+
+        g->DrawPath(_pen, &path);
     }
 }
 
