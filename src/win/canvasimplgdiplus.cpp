@@ -771,10 +771,13 @@ void kCanvasImplGDIPlus::BeginClippedDrawingByPath(const kPathImpl *clip, const 
 
     const kPathImplGDIPlus *path = static_cast<const kPathImplGDIPlus*>(clip);
     GraphicsPath *copy = path->p_path->Clone();
+
+    kTransform t = this->transform * transform;
+
     Matrix m(
-        transform.m00, transform.m01,
-        transform.m10, transform.m11,
-        transform.m20, transform.m21
+        t.m00, t.m01,
+        t.m10, t.m11,
+        t.m20, t.m21
     );
     copy->Transform(&m);
 
@@ -782,6 +785,8 @@ void kCanvasImplGDIPlus::BeginClippedDrawingByPath(const kPathImpl *clip, const 
     copy->GetBounds(&bounds);
 
     bounds.GetLocation(&clipstate.origin);
+    clipstate.origin.X -= this->transform.m20;
+    clipstate.origin.Y -= this->transform.m21;
 
     INT width = roundup(bounds.Width);
     INT height = roundup(bounds.Height);
