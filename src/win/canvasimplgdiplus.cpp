@@ -663,15 +663,14 @@ void kCanvasImplGDIPlus::GetGlyphMetrics(const kFontBase *font, size_t first, si
     HDC dc = CreateCompatibleDC(0);
     HGDIOBJ pf = SelectObject(dc, gdifont);
 
-    while (first < last) {
-        size_t count = umin(BUFFER_LEN, last - first);
+    while (first <= last) {
+        size_t count = umin(BUFFER_LEN, last - first + 1);
         GetCharABCWidthsFloatA(dc, UINT(first), UINT(first + count), abc);
 
         for (size_t n = 0; n < count; ++n) {
-            // TODO: fix ABC -> bearing/advance metrics
             metrics->leftbearing = abc[n].abcfA;
-            metrics->advance = abc[n].abcfB;
-            metrics->rightbearing = abc[n].abcfC;
+            metrics->advance = abc[n].abcfA + abc[n].abcfB + abc[n].abcfC;
+            metrics->rightbearing = -abc[n].abcfC;
             ++metrics;
         }
 
