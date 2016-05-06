@@ -745,11 +745,8 @@ void kCanvasImplGDIPlus::BeginClippedDrawingByMask(const kBitmapImpl *mask, cons
     Graphics pmg(clipstate.mask);
     pmg.SetSmoothingMode(SmoothingModeAntiAlias);
     TextureBrush brush(static_cast<const kBitmapImplGDIPlus*>(mask)->p_bitmap);
-    Matrix m(
-        transform.m00, transform.m01,
-        transform.m10, transform.m11,
-        transform.m20, transform.m21
-    );
+    kTransform t = transform * this->transform;
+    Matrix m(t.m00, t.m01, t.m10, t.m11, t.m20, t.m21);
     m.Translate(REAL(-boundrect.left), REAL(-boundrect.top), MatrixOrderAppend);
     brush.SetTransform(&m);
     pmg.FillRectangle(&brush, -0.5f, -0.5f, REAL(width), REAL(height));
@@ -772,21 +769,14 @@ void kCanvasImplGDIPlus::BeginClippedDrawingByPath(const kPathImpl *clip, const 
     const kPathImplGDIPlus *path = static_cast<const kPathImplGDIPlus*>(clip);
     GraphicsPath *copy = path->p_path->Clone();
 
-    kTransform t = this->transform * transform;
-
-    Matrix m(
-        t.m00, t.m01,
-        t.m10, t.m11,
-        t.m20, t.m21
-    );
+    kTransform t = transform * this->transform;
+    Matrix m(t.m00, t.m01, t.m10, t.m11, t.m20, t.m21);
     copy->Transform(&m);
 
     RectF bounds;
     copy->GetBounds(&bounds);
 
     bounds.GetLocation(&clipstate.origin);
-    clipstate.origin.X -= this->transform.m20;
-    clipstate.origin.Y -= this->transform.m21;
 
     INT width = roundup(bounds.Width);
     INT height = roundup(bounds.Height);
@@ -874,10 +864,16 @@ void kCanvasImplGDIPlus::PopClipState()
         CopyMask(boundrect.width(), boundrect.height(), clip.maskedimage, clip.mask);
 
         g = clip.graphics;
+
+        g->ResetTransform();
+        g->DrawImage(
+            clip.maskedimage,
+            clip.origin.X - clip.boundrect.left,
+            clip.origin.Y - clip.boundrect.top
+        );
+
         boundrect = clip.boundrect;
         UpdateTransform();
-
-        g->DrawImage(clip.maskedimage, clip.origin.X + 0.5f, clip.origin.Y + 0.5f);
 
         delete clip.mask;
         delete clip.maskedimage;
