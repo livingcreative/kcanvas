@@ -3,7 +3,7 @@
 
     Common 2D graphics API abstraction with multiple back-end support
 
-    (c) livingcreative, 2015
+    (c) livingcreative, 2015 - 2016
 
     https://github.com/livingcreative/kcanvas
 
@@ -130,7 +130,7 @@ namespace k_canvas
         {
         public:
             virtual void Initialize(size_t width, size_t height, kBitmapFormat format) = 0;
-            virtual void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourceputch, void *data) = 0;
+            virtual void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourceputch, const void *data) = 0;
         };
 
 
@@ -166,10 +166,10 @@ namespace k_canvas
             virtual void DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha) = 0;
             virtual void DrawMask(const kBitmapImpl *mask, kBrushBase *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize) = 0;
 
-            virtual void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) = 0;
+            virtual void GetFontMetrics(const kFontBase *font, kFontMetrics &metrics) = 0;
             virtual void GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics) = 0;
-            virtual kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) = 0;
-            virtual void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) = 0;
+            virtual kSize TextSize(const char *text, size_t count, const kFontBase *font) = 0;
+            virtual void Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) = 0;
 
             virtual void BeginClippedDrawingByMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) = 0;
             virtual void BeginClippedDrawingByPath(const kPathImpl *clip, const kTransform &transform) = 0;

@@ -3,7 +3,7 @@
 
     Common 2D graphics API abstraction with multiple back-end support
 
-    (c) livingcreative, 2015
+    (c) livingcreative, 2015 - 2016
 
     https://github.com/livingcreative/kcanvas
 
@@ -64,7 +64,7 @@ static inline D2D1_ELLIPSE r2eD2D(const kRect &rect)
     return el;
 }
 
-static inline D2D1_COLOR_F c2c(const kColor &color)
+static inline D2D1_COLOR_F c2c(const kColor color)
 {
     D2D1_COLOR_F clr;
     kColorReal colorf(color);
@@ -433,7 +433,7 @@ void kBitmapImplD2D::Initialize(size_t width, size_t height, kBitmapFormat forma
     P_RT->CreateBitmap(sz, nullptr, 0, props, &p_bitmap);
 }
 
-void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, void *data)
+void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, const void *data)
 {
     D2D1_SIZE_F size = p_bitmap->GetSize();
 
@@ -758,22 +758,22 @@ void kCanvasImplD2D::DrawMask(const kBitmapImpl *mask, kBrushBase *brush, const 
     P_RT->SetAntialiasMode(aa);
 }
 
-void kCanvasImplD2D::GetFontMetrics(const kFontBase *font, kFontMetrics *metrics)
+void kCanvasImplD2D::GetFontMetrics(const kFontBase *font, kFontMetrics &metrics)
 {
     DWRITE_FONT_METRICS m;
     _font_face->GetMetrics(&m);
     float k = PointSizeToDesignUnitsRatio(_font_size, m.designUnitsPerEm);
 
-    metrics->ascent = m.ascent * k;
-    metrics->descent = m.descent * k;
-    metrics->height = metrics->ascent + metrics->descent;
-    metrics->linegap = m.lineGap * k;
-    metrics->underlinepos = m.underlinePosition * k;
-    metrics->underlinewidth = m.underlineThickness * k;
-    metrics->strikethroughpos = m.strikethroughPosition * k;
-    metrics->strikethroughwidth = m.strikethroughThickness * k;
-    metrics->capheight = m.capHeight * k;
-    metrics->xheight = m.xHeight * k;
+    metrics.ascent = m.ascent * k;
+    metrics.descent = m.descent * k;
+    metrics.height = metrics.ascent + metrics.descent;
+    metrics.linegap = m.lineGap * k;
+    metrics.underlinepos = m.underlinePosition * k;
+    metrics.underlinewidth = m.underlineThickness * k;
+    metrics.strikethroughpos = m.strikethroughPosition * k;
+    metrics.strikethroughwidth = m.strikethroughThickness * k;
+    metrics.capheight = m.capHeight * k;
+    metrics.xheight = m.xHeight * k;
 }
 
 void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics)
@@ -792,20 +792,18 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
         DWRITE_GLYPH_METRICS abc;
         _font_face->GetDesignGlyphMetrics(&index, 1, &abc, FALSE);
 
-        cm->a = abc.leftSideBearing * k;
-        cm->b = abc.advanceWidth * k;
-        cm->c = abc.rightSideBearing * k;
+        cm->leftbearing = abc.leftSideBearing * k;
+        cm->advance = abc.advanceWidth * k;
+        cm->rightbearing = -abc.rightSideBearing * k;
 
         ++cm;
     }
 }
 
-kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *font, kSize *bounds)
+kSize kCanvasImplD2D::TextSize(const char *text, size_t count, const kFontBase *font)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-    wstring t = count == -1 ?
-        convert.from_bytes(text) :
-        convert.from_bytes(text, text + count);
+    wstring t = convert.from_bytes(text, text + count);
 
     size_t length = t.length();
     size_t pos = 0;
@@ -832,23 +830,15 @@ kSize kCanvasImplD2D::TextSize(const char *text, int count, const kFontBase *fon
         }
 
         pos += curlen;
-
-        if (bounds && pos == length) {
-            *bounds = result;
-            bounds->width -= abc[pos - 1].rightSideBearing * k;
-            bounds->height += m.lineGap * k;
-        }
     }
 
     return result;
 }
 
-void kCanvasImplD2D::Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
+void kCanvasImplD2D::Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-    wstring t = count == -1 ?
-        convert.from_bytes(text) :
-        convert.from_bytes(text, text + count);
+    wstring t = convert.from_bytes(text, text + count);
 
     size_t length = t.length();
     size_t pos = 0;
@@ -1064,7 +1054,9 @@ void kCanvasImplD2D::GetGlyphRunMetrics(
 {
     for (size_t n = 0; n < curlen; ++n) {
         wchar_t ch = t[n + pos];
-        if (ch == '\n' || ch == '\r') {
+        // TODO: think about this check, actually canvas class shouldn't pass
+        //       special characters to text functions
+        if (ch >= 0 && ch < ' ') {
             ch = ' ';
         }
         codepoints[n] = ch;

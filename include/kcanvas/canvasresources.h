@@ -3,7 +3,7 @@
 
     Common 2D graphics API abstraction with multiple back-end support
 
-    (c) livingcreative, 2015
+    (c) livingcreative, 2015 - 2016
 
     https://github.com/livingcreative/kcanvas
 
@@ -14,8 +14,6 @@
 
 #pragma once
 #include "canvastypes.h"
-#include <string>
-#include <unordered_map>
 
 
 namespace k_canvas
@@ -41,7 +39,8 @@ namespace k_canvas
          -------------------------------------------------------------------------------
             stroke resource object properties data structure
         */
-        enum {
+        enum
+        {
             MAX_STROKES = 16
         };
 
@@ -98,7 +97,8 @@ namespace k_canvas
          -------------------------------------------------------------------------------
             font resource object properties data structure
         */
-        enum {
+        enum
+        {
             MAX_FONT_FACE_LENGTH = 32
         };
 
@@ -183,6 +183,11 @@ namespace k_canvas
          -------------------------------------------------------------------------------
             base class template for all shareable resource objects
         */
+        enum
+        {
+            MAX_NATIVE_RESOURCES = 4
+        };
+
         template <typename Tdata>
         class kSharedResourceBase
         {
@@ -199,14 +204,9 @@ namespace k_canvas
 
             kSharedResourceBase(const kSharedResourceBase<Tdata> &source) :
                 p_data(source.p_data),
-                p_resource(source.p_resource)
+                p_resource(nullptr)
             {
-                if (p_resource) {
-                    for (size_t n = 0; n < MAX_NATIVE_RESOURCES; ++n) {
-                        p_native[n] = source.p_native[n];
-                    }
-                    p_resource->addref();
-                }
+                AssignResource(source);
             }
 
             ~kSharedResourceBase()
@@ -245,11 +245,38 @@ namespace k_canvas
                 return p_resource;
             }
 
+            void AssignResource(const kSharedResourceBase<Tdata> &source)
+            {
+                if (p_resource) {
+                    p_resource->release();
+                }
+
+                p_resource = source.p_resource;
+
+                if (p_resource) {
+                    for (size_t n = 0; n < MAX_NATIVE_RESOURCES; ++n) {
+                        p_native[n] = source.p_native[n];
+                    }
+                    p_resource->addref();
+                }
+            }
+
+            template <typename T>
+            void AssignReferencedResource(T source, T &dest)
+            {
+                if (source != dest) {
+                    if (dest) {
+                        dest->release();
+                    }
+                    dest = source;
+                    if (dest) {
+                        dest->addref();
+                    }
+                }
+            }
+
             const Tdata& data() const { return p_data; }
             void** native() const { return p_native; }
-
-        protected:
-            static const size_t MAX_NATIVE_RESOURCES = 4;
 
         protected:
             Tdata                    p_data;                         // resource data (properties)
