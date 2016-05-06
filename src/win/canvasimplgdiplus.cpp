@@ -244,7 +244,7 @@ void kBitmapImplGDIPlus::Initialize(size_t width, size_t height, kBitmapFormat f
     p_bitmap = new Bitmap(INT(width), INT(height), PixelFormat32bppPARGB);
 }
 
-void kBitmapImplGDIPlus::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, void *data)
+void kBitmapImplGDIPlus::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, const void *data)
 {
     kRectInt bitmaprect(0, 0, p_bitmap->GetWidth(), p_bitmap->GetHeight());
     kRectInt update = updaterect ? bitmaprect.intersectionwith(*updaterect) : bitmaprect;
@@ -624,7 +624,7 @@ void kCanvasImplGDIPlus::DrawMask(const kBitmapImpl *mask, kBrushBase *brush, co
     g->DrawImage(&maskedimage, p2pGDIP(origin + 0.5f));
 }
 
-void kCanvasImplGDIPlus::GetFontMetrics(const kFontBase *font, kFontMetrics *metrics)
+void kCanvasImplGDIPlus::GetFontMetrics(const kFontBase *font, kFontMetrics &metrics)
 {
     HFONT gdifont = _fontgdi;
     HDC dc = CreateCompatibleDC(0);
@@ -635,17 +635,17 @@ void kCanvasImplGDIPlus::GetFontMetrics(const kFontBase *font, kFontMetrics *met
 
     // TODO: check for correct units
 
-    metrics->ascent = kScalar(tm.otmTextMetrics.tmAscent);
-    metrics->descent = kScalar(tm.otmTextMetrics.tmDescent);
-    metrics->height = kScalar(tm.otmTextMetrics.tmHeight);
-    metrics->linegap = kScalar(tm.otmTextMetrics.tmExternalLeading);
+    metrics.ascent = kScalar(tm.otmTextMetrics.tmAscent);
+    metrics.descent = kScalar(tm.otmTextMetrics.tmDescent);
+    metrics.height = kScalar(tm.otmTextMetrics.tmHeight);
+    metrics.linegap = kScalar(tm.otmTextMetrics.tmExternalLeading);
     // TODO: this two metrics are not supported under GDI/GDI+
-    metrics->capheight = 0;
-    metrics->xheight = 0;
-    metrics->underlinepos = kScalar(tm.otmsUnderscorePosition);
-    metrics->underlinewidth = kScalar(tm.otmsUnderscorePosition);
-    metrics->strikethroughpos = kScalar(tm.otmsStrikeoutPosition);
-    metrics->strikethroughwidth = kScalar(tm.otmsStrikeoutSize);
+    metrics.capheight = 0;
+    metrics.xheight = 0;
+    metrics.underlinepos = kScalar(tm.otmsUnderscorePosition);
+    metrics.underlinewidth = kScalar(tm.otmsUnderscorePosition);
+    metrics.strikethroughpos = kScalar(tm.otmsStrikeoutPosition);
+    metrics.strikethroughwidth = kScalar(tm.otmsStrikeoutSize);
 
     SelectObject(dc, pf);
     DeleteDC(dc);
@@ -665,9 +665,10 @@ void kCanvasImplGDIPlus::GetGlyphMetrics(const kFontBase *font, size_t first, si
         GetCharABCWidthsFloatA(dc, UINT(first), UINT(first + count), abc);
 
         for (size_t n = 0; n < count; ++n) {
-            metrics->a = abc[n].abcfA;
-            metrics->b = abc[n].abcfB;
-            metrics->c = abc[n].abcfC;
+            // TODO: fix ABC -> bearing/advance metrics
+            metrics->leftbearing = abc[n].abcfA;
+            metrics->advance = abc[n].abcfB;
+            metrics->rightbearing = abc[n].abcfC;
             ++metrics;
         }
 
@@ -678,7 +679,7 @@ void kCanvasImplGDIPlus::GetGlyphMetrics(const kFontBase *font, size_t first, si
     DeleteDC(dc);
 }
 
-kSize kCanvasImplGDIPlus::TextSize(const char *text, int count, const kFontBase *font, kSize *bounds)
+kSize kCanvasImplGDIPlus::TextSize(const char *text, size_t count, const kFontBase *font)
 {
     bool wasbound = g != nullptr;
 
@@ -689,10 +690,7 @@ kSize kCanvasImplGDIPlus::TextSize(const char *text, int count, const kFontBase 
 
     // GDI+ can't measure single space character, why anybody want to do that, yeah?
 
-    if (count == -1) {
-        count = int(strlen(text));
-    }
-
+    // this is dirty hack, need more robust solution here
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
     wstring t = L"!" + convert.from_bytes(text, text + count) + L"!";
     replace(t.begin(), t.end(), '\n', ' ');
@@ -700,7 +698,7 @@ kSize kCanvasImplGDIPlus::TextSize(const char *text, int count, const kFontBase 
     count += 2;
 
     RectF rect;
-    g->MeasureString(t.c_str(), count, _font, PointF(), sf, &rect);
+    g->MeasureString(t.c_str(), INT(count), _font, PointF(), sf, &rect);
 
     RectF rectpad;
     g->MeasureString(L"!!", 2, _font, PointF(), sf, &rectpad);
@@ -712,15 +710,10 @@ kSize kCanvasImplGDIPlus::TextSize(const char *text, int count, const kFontBase 
         boundDC = 0;
     }
 
-    if (bounds) {
-        // TODO: correct bounds
-        *bounds = kSize(rect.Width - rectpad.Width, rect.Height);
-    }
-
     return kSize(rect.Width - rectpad.Width, rect.Height);
 }
 
-void kCanvasImplGDIPlus::Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
+void kCanvasImplGDIPlus::Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
     wstring t = convert.from_bytes(text);
@@ -729,10 +722,10 @@ void kCanvasImplGDIPlus::Text(const kPoint &p, const char *text, int count, cons
     if (Brush *sec = _brushsec) {
         PushClipState(true);
         g->SetClip(_brushclip, CombineModeExclude);
-        g->DrawString(t.c_str(), count, _font, PointF(p.x + 0.5f, p.y + 0.5f), sf, sec);
+        g->DrawString(t.c_str(), INT(count), _font, PointF(p.x + 0.5f, p.y + 0.5f), sf, sec);
         PopClipState();
     }
-    g->DrawString(t.c_str(), count, _font, PointF(p.x + 0.5f, p.y + 0.5f), sf, _brush);
+    g->DrawString(t.c_str(), INT(count), _font, PointF(p.x + 0.5f, p.y + 0.5f), sf, _brush);
 }
 
 void kCanvasImplGDIPlus::BeginClippedDrawingByMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend)
