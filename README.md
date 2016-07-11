@@ -12,6 +12,17 @@ kcanvas is easy to use C++ API for rendering 2D graphics. Its main purpose is to
 kcanvas API is able to render 2D vector and raster graphics. You can stroke and fill different simple and complex shapes with many different styles, render text with different fonts available in your system. Here is sample image which shows what you can render with help of kcanvas API:   
 ![kcanvas demo image](https://raw.githubusercontent.com/livingcreative/kcanvas/master/demo.jpg)
 
+**Features**
+* Commonly used predefined shapes (line, bezier, arc, rectangle, rounded rectangle, ellipse, poly lines and polygons)
+* Shapes of arbitrary complexity
+* Many different line stroke styles, line join styles
+* Several fill styles (solid, linear and radial gradients, bitmap)
+* Full alpha transparency support
+* Clipping to shapes and masking by grayscale images, mask fill with brush
+* Bitmap rendering (with alpha channel support)
+* Arbitrary transformation stack (via 3x2 matrix)
+* Text measurement and rendering (with simple layouts)
+
 ## How it works
 In kcanvas API all of painting functions tied to `kCanvas` class. `kCanvas` object can't be instantiated directly, you need to use specific implementation to direct painting to specific device or `kBitmap` object. You can use `kContextCanvas` to paint into window and `kBitmapCanvas` to paint into `kBitmap` object.
 
