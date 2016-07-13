@@ -78,7 +78,7 @@ namespace k_canvas
             ~kBitmapImplCairo() override;
 
             void Initialize(size_t width, size_t height, kBitmapFormat format) override;
-            void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourceputch, void *data) override;
+            void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourceputch, const void *data) override;
 
         private:
             cairo_surface_t *p_bitmap;
@@ -127,10 +127,10 @@ namespace k_canvas
             void DrawBitmap(const kBitmapImpl *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha) override;
             void DrawMask(const kBitmapImpl *mask, kBrushBase *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize) override;
 
-            void GetFontMetrics(const kFontBase *font, kFontMetrics *metrics) override;
+            void GetFontMetrics(const kFontBase *font, kFontMetrics &metrics) override;
             void GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics) override;
-            kSize TextSize(const char *text, int count, const kFontBase *font, kSize *bounds) override;
-            void Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) override;
+            kSize TextSize(const char *text, size_t count, const kFontBase *font) override;
+            void Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin) override;
 
             void BeginClippedDrawingByMask(const kBitmapImpl *mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) override;
             void BeginClippedDrawingByPath(const kPathImpl *clip, const kTransform &transform) override;
@@ -154,7 +154,7 @@ namespace k_canvas
             void FillAndStroke(const kPenBase *pen, const kBrushBase *brush);
             Clip& PushClip(bool save);
             void PopClip();
-            static void PrepareText(const char *source, int length, char *buffer);
+            static void PrepareText(const char *source, size_t length, char *buffer);
 
         private:
             cairo_t           *boundContext;

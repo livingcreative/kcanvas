@@ -124,7 +124,7 @@ void kBitmapImplCairo::Initialize(size_t width, size_t height, kBitmapFormat for
     p_bitmap = cairo_image_surface_create_for_data(p_data, formats[size_t(format)], int(width), int(height), int(p_pitch));
 }
 
-void kBitmapImplCairo::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, void *data)
+void kBitmapImplCairo::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, const void *data)
 {
     unsigned char *dst = p_data;
     const unsigned char *src = reinterpret_cast<const unsigned char*>(data);
@@ -441,23 +441,23 @@ void kCanvasImplCairo::DrawMask(const kBitmapImpl *mask, kBrushBase *brush, cons
     cairo_pattern_destroy(p);
 }
 
-void kCanvasImplCairo::GetFontMetrics(const kFontBase *font, kFontMetrics *metrics)
+void kCanvasImplCairo::GetFontMetrics(const kFontBase *font, kFontMetrics &metrics)
 {
     ApplyFont(font);
     cairo_font_extents_t ext;
     cairo_font_extents(boundContext, &ext);
 
-    metrics->ascent = kScalar(ext.ascent);
-    metrics->descent = kScalar(ext.descent);
-    metrics->height = kScalar(ext.height);
+    metrics.ascent = kScalar(ext.ascent);
+    metrics.descent = kScalar(ext.descent);
+    metrics.height = kScalar(ext.height);
     // TODO: additional font metrics
-    metrics->linegap = 0;
-    metrics->capheight = 0;
-    metrics->xheight = 0;
-    metrics->underlinepos = 0;
-    metrics->underlinewidth = 0;
-    metrics->strikethroughpos = 0;
-    metrics->strikethroughwidth = 0;
+    metrics.linegap = 0;
+    metrics.capheight = 0;
+    metrics.xheight = 0;
+    metrics.underlinepos = 0;
+    metrics.underlinewidth = 0;
+    metrics.strikethroughpos = 0;
+    metrics.strikethroughwidth = 0;
 }
 
 void kCanvasImplCairo::GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics)
@@ -470,12 +470,13 @@ void kCanvasImplCairo::GetGlyphMetrics(const kFontBase *font, size_t first, size
     }
     cairo_glyph_extents(boundContext, glyphs, last - first + 1, &ext);
 
-    metrics->a = kScalar(ext.x_bearing);
-    metrics->b = kScalar(ext.x_advance - ext.width);
-    metrics->c = kScalar(ext.x_advance - ext.x_bearing);
+    metrics->leftbearing = kScalar(ext.x_bearing);
+    metrics->advance = kScalar(ext.x_advance);
+    // TODO: right bearing
+    metrics->rightbearing = kScalar(ext.x_advance - ext.x_bearing);
 }
 
-kSize kCanvasImplCairo::TextSize(const char *text, int count, const kFontBase *font, kSize *bounds)
+kSize kCanvasImplCairo::TextSize(const char *text, size_t count, const kFontBase *font)
 {
     bool notbound = boundContext == nullptr;
     cairo_surface_t *surface = nullptr;
@@ -484,6 +485,7 @@ kSize kCanvasImplCairo::TextSize(const char *text, int count, const kFontBase *f
         boundContext = cairo_create(surface);
     }
 
+    // TODO: this is wrong, don't limit buffer
     char buffer[4096];
     PrepareText(text, count, buffer);
 
@@ -494,12 +496,6 @@ kSize kCanvasImplCairo::TextSize(const char *text, int count, const kFontBase *f
     cairo_font_extents_t f_ext;
     cairo_font_extents(boundContext, &f_ext);
 
-    if (bounds) {
-        // TODO: adjust bounds, fix space measurement
-        bounds->width = kScalar(t_ext.width);
-        bounds->height = kScalar(t_ext.height);
-    }
-
     if (notbound) {
         cairo_destroy(boundContext);
         cairo_surface_destroy(surface);
@@ -509,8 +505,9 @@ kSize kCanvasImplCairo::TextSize(const char *text, int count, const kFontBase *f
     return kSize(float(t_ext.width), float(f_ext.height));
 }
 
-void kCanvasImplCairo::Text(const kPoint &p, const char *text, int count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
+void kCanvasImplCairo::Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
 {
+    // TODO: this is wrong, don't limit buffer
     char buffer[4096];
     PrepareText(text, count, buffer);
 
@@ -753,12 +750,9 @@ void kCanvasImplCairo::PopClip()
     }
 }
 
-void kCanvasImplCairo::PrepareText(const char *source, int length, char *buffer)
+void kCanvasImplCairo::PrepareText(const char *source, size_t length, char *buffer)
 {
     // TODO: unsafe copy, optimize length/copy
-    if (length == -1) {
-        length = strlen(source);
-    }
     strncpy(buffer, source, length);
     buffer[length] = 0;
 
