@@ -3,31 +3,46 @@
 
     Common 2D graphics API abstraction with multiple back-end support
 
-    (c) livingcreative, 2015
+    (c) livingcreative, 2015 - 2016
 
     https://github.com/livingcreative/kcanvas
 
     canvas.h
         main include file
         exposes mostly all the API types and classes
+
+        general notes on code
+            mandatory object parameters passed as is or by reference (&)
+            optional object parameters passed by pointer (*) and can be null
+            kColor values passed by value (it's only 4 bytes)
 */
 
 #pragma once
 #include "canvastypes.h"     // all basic data types used by canvas and its objects
 #include "canvasresources.h" // internal resource object definitions
+#include <vector>
+
+
+// this empty defines are only for convenient hints to function parameters
+//      (they are undefined at the end of this header)
+#define in
+#define out
 
 
 namespace k_canvas
 {
     // Basic forward declarations, see what you have to work with
-    class kStroke;   // stroke properties, used with pen
-    class kGradient; // gradient object, holds gradient definitions
-    class kPen;      // pen object, holds all the data stroke operation needs
-    class kBrush;    // brush object, holds all the data fill operation needs
-    class kFont;     // font object, holds all font properties
-    class kPath;     // path object, holds shape definition
-    class kBitmap;   // bitmap object, holds pixel data
-    class kCanvas;   // canvas, provides drawing interface
+    class kStroke;        // stroke properties, used with pen
+    class kGradient;      // gradient object, holds gradient definitions
+    class kPen;           // pen object, holds all the data stroke operation needs
+    class kBrush;         // brush object, holds all the data fill operation needs
+    class kFont;          // font object, holds all font properties
+    class kPath;          // path object, holds shape definition
+    class kBitmap;        // bitmap object, holds pixel data
+    class kTextService;   // text service, provides font info/text measurement interface
+    class kCanvas;        // canvas, provides drawing interface
+    class kBitmapCanvas;  // canvas for painting into kBitmap
+    class kContextCanvas; // canvas for painting into implementation specific context
 
     namespace impl
     {
@@ -55,7 +70,7 @@ namespace k_canvas
         fully identical properties, both objects get same single implementation
         object.
 
-        Unique objects are always hold a unique copy of their resurce object.
+        Unique objects are always hold a unique copy of their resource object.
         The resource object only shared between other objects which use it
         as a source of data or properties.
 
@@ -86,13 +101,13 @@ namespace k_canvas
         how stroke painting operation should be done
 
         these properties are:
-            kStroke   style      - line style
-            kLineJoin join       - how multiples lines are connected
-            kCapStyle startcap   - style of start line cap
-            kCapStyle endcap     - style of end line cap
-            kCapStyle dashcap    - style of caps between line dashes (for non solid styles)
-            kScalar   dashoffset - offset of dash pattern along line
-            kScalar   strokes[]  - array for custom dash pattern definition
+            kStrokeStyle style      - line stroke style
+            kLineJoin    join       - defines how multiple lines are connected together
+            kCapStyle    startcap   - style of start line cap
+            kCapStyle    endcap     - style of end line cap
+            kCapStyle    dashcap    - style of caps between line dashes (for non solid styles)
+            kScalar      dashoffset - offset of dash pattern along line
+            kScalar      strokes[]  - array for custom style pattern definition
 
         Strokes array passed to constructor is copied inside object and can be
         safely deleted after object construction
@@ -118,6 +133,10 @@ namespace k_canvas
             const kScalar *strokes = nullptr, size_t count = 0
         );
         ~kStroke();
+
+        // this type of object can be copied and reassigned to other
+        kStroke(const kStroke &source);
+        kStroke& operator=(const kStroke &source);
     };
 
 
@@ -147,14 +166,15 @@ namespace k_canvas
 
     public:
         // create simple two color gradient with start color at 0 and end color at 1
-        kGradient(const kColor &start, const kColor &end, kExtendType extend = kExtendType::Clamp);
+        kGradient(const kColor start, const kColor end, kExtendType extend = kExtendType::Clamp);
         // create gradient based on gradient stops array
         kGradient(const kGradientStop *stops, size_t count, kExtendType extend = kExtendType::Clamp);
         ~kGradient();
 
     private:
-        // copy constructor (gradient can't be copied)
-        kGradient(const kGradient &source) {}
+        // this type of object can NOT be copied and reassigned to other
+        kGradient(const kGradient &source);
+        kGradient& operator=(const kGradient &source);
 
     protected:
         impl::kGradientImpl *p_impl; // gradient object implementation
@@ -187,15 +207,17 @@ namespace k_canvas
         // quick pen creation based on color, width and stroke style
         //     implicitly creates solid style brush object with color provided
         //     other stroke parameters set to default values (see kStroke default values)
-        kPen(const kColor &color, kScalar width = 1, kStrokeStyle style = kStrokeStyle::Solid, const kScalar *strokes = nullptr, size_t count = 0);
+        kPen(const kColor color, kScalar width = 1, kStrokeStyle style = kStrokeStyle::Solid, const kScalar *strokes = nullptr, size_t count = 0);
         // quick pen creation based on color and kStroke properties object
         //     implicitly creates solid style brush object with color provided
-        kPen(const kColor &color, kScalar width, const kStroke *stroke);
+        kPen(const kColor color, kScalar width, const kStroke &stroke);
         // general pen creation based on kBrush object and kStroke properties object
-        kPen(const kBrush &brush, kScalar width, const kStroke *stroke);
-        // copy constructor
-        kPen(const kPen &source);
+        kPen(const kBrush &brush, kScalar width, const kStroke &stroke);
         ~kPen();
+
+        // this type of object can be copied and reassigned to other
+        kPen(const kPen &source);
+        kPen& operator=(const kPen &source);
     };
 
 
@@ -207,7 +229,7 @@ namespace k_canvas
 
         brush object defines how fill painting operation is performed
 
-        kBrushStyle type defines kind of fill operation
+        kBrushStyle type defines kind of fill operation (set implicitly by constructor)
             Solid          - single solid color fill
             LinearGradient - fill with linear gradient sourced from kGradient object
             RadialGradient - fill with radial gradient source from kGradient object
@@ -240,16 +262,18 @@ namespace k_canvas
         // quick Clear brush creation
         kBrush();
         // solid brush creation based on color
-        kBrush(const kColor &color);
+        kBrush(const kColor color);
         // linear gradient brush creation based on kGradient object
         kBrush(const kPoint &start, const kPoint &end, const kGradient &gradient);
         // radial gradient brush creation based on kGradient object
         kBrush(const kPoint &center, const kPoint &offset, const kSize &radius, const kGradient &gradient);
         // bitmap brush creation based on kBitmap object
-        kBrush(kExtendType xextend, kExtendType yextend, const kBitmap *bitmap);
-        // copy constructor
-        kBrush(const kBrush &source);
+        kBrush(kExtendType xextend, kExtendType yextend, const kBitmap &bitmap);
         ~kBrush();
+
+        // this type of object can be copied and reassigned to other
+        kBrush(const kBrush &source);
+        kBrush& operator=(const kBrush &source);
     };
 
 
@@ -274,9 +298,11 @@ namespace k_canvas
         kFont();
         // create font with desired properties
         kFont(const char *facename, kScalar size, uint32_t style = 0);
-        // copy constructor
-        //kFont(const kFont &source);
         ~kFont();
+
+        // this type of object can be copied and reassigned to other
+        kFont(const kFont &source);
+        kFont& operator=(const kFont &source);
     };
 
 
@@ -294,7 +320,7 @@ namespace k_canvas
         construction state until Commit() command is called. In construction
         state path construction commands can be issued for path definition. When
         desired path is constructed one should issue Commit() command. After
-        commitment path object is transfered to ready state and can't be modified.
+        commitment path object is transferred to ready state and can't be modified.
 
         Path construction commands
             MoveTo(kPoint point)
@@ -307,12 +333,13 @@ namespace k_canvas
                 specified point
 
             BezierTo(kPoint p1, kPoint p2, kPoint p3)
-                add qubic bezier line to current figure
+                add cubic bezier line to current figure
                 p1 is first control point
                 p2 is second control point
                 p3 is line end point
 
             ArcTo(kRect rect, kScalar start, kScalar end)
+            NOTE: parameters to this command are subject to change
                 add elliptic arc to current path
                 rect is ellipse bounding rectangle
                 start is start arc angle
@@ -337,6 +364,7 @@ namespace k_canvas
                 close current open figure
 
         Path object commands
+            NOTE: this command is subject for removal
             Clear
                 reset all path data and transfers path object to construction state
 
@@ -364,7 +392,7 @@ namespace k_canvas
         void ArcTo(const kRect &rect, kScalar start, kScalar end);
         void PolyLineTo(const kPoint *points, size_t count);
         void PolyBezierTo(const kPoint *points, size_t count);
-        void Text(const char *text, int count, const kFont *font, kTextOrigin origin = kTextOrigin::Top);
+        void Text(const char *text, int count, const kFont &font, kTextOrigin origin = kTextOrigin::Top);
         void Close();
 
         // path clear & commit
@@ -372,8 +400,9 @@ namespace k_canvas
         void Commit();
 
     private:
-        // copy constructor (path can not be copied)
-        kPath(const kPath &source) {}
+        // this type of object can NOT be copied and reassigned to other
+        kPath(const kPath &source);
+        kPath& operator=(const kPath &source);
 
     protected:
         impl::kPathImpl *p_impl; // path object implementation
@@ -420,11 +449,12 @@ namespace k_canvas
         kSize size() const { return kSize(kScalar(p_width), kScalar(p_height)); }
         kBitmapFormat format() const { return p_format; }
 
-        void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, void *data);
+        void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, const void *data);
 
     private:
-        // copy constructor (bitmap can not be copied)
-        kBitmap(const kBitmap &source) {}
+        // this type of object can NOT be copied and reassigned to other
+        kBitmap(const kBitmap &source);
+        kBitmap& operator=(const kBitmap &source);
 
     protected:
         impl::kBitmapImpl *p_impl;
@@ -455,9 +485,14 @@ namespace k_canvas
         ~kTextService();
 
         // simple text measuring and drawing 
-        void GetFontMetrics(const kFont *font, kFontMetrics *metrics);
-        void GetGlyphMetrics(const kFont *font, size_t first, size_t last, kGlyphMetrics *metrics);
-        kSize TextSize(const char *text, int count, const kFont *font, kSize *bounds = nullptr, const kTextSizeProperties *properties = nullptr);
+        void GetFontMetrics(const kFont &font, out kFontMetrics &metrics);
+        void GetGlyphMetrics(const kFont &font, size_t first, size_t last, out kGlyphMetrics *metrics);
+        kSize TextSize(const char *text, int count, const kFont &font, const kTextSizeProperties *properties = nullptr, out kRect *bounds = nullptr);
+
+    private:
+        // this type of object can NOT be copied and reassigned to other
+        kTextService(const kTextService &source);
+        kTextService& operator=(const kTextService &source);
 
     protected:
         impl::kCanvasImpl *p_impl;
@@ -517,18 +552,31 @@ namespace k_canvas
             Text(kPoint p ...)   - render single line of text with specified font and brush
             Text(kRect rect ...) - render bounded multiline text
                 with optional alignment and clipping
+
+        clipping
+            drawing can be clipped by any arbitrary shape or mask
+            BeginClippedDrawing command marks beginning of clipped drawing
+            EndClippedDrawing   command reverts back to previous clipping
+            clipping can be nested
+
+        transform
+            canvas transform organized as a stack
+            SetTransform command changes transform at the top of the stack (it will be last in a hierarchy)
+            PushTransform pushes new transform on a stack
+            PopTransform pops transform from a stack and reverts to previous one
     */
     class kCanvas : public kTextService
     {
     public:
         // quick draw calls of certain primitive types for non-closed outlines
-        void Line(const kPoint &a, const kPoint &b, const kPen *pen);
-        void Bezier(const kPoint &p1, const kPoint &p2, const kPoint &p3, const kPoint &p4, const kPen *pen);
-        void Arc(const kRect &rect, kScalar start, kScalar end, const kPen *pen);
-        void PolyLine(const kPoint *points, size_t count, const kPen *pen);
-        void PolyBezier(const kPoint *points, size_t count, const kPen *pen);
+        void Line(const kPoint &a, const kPoint &b, const kPen &pen);
+        void Bezier(const kPoint &p1, const kPoint &p2, const kPoint &p3, const kPoint &p4, const kPen &pen);
+        void Arc(const kRect &rect, kScalar start, kScalar end, const kPen &pen);
+        void PolyLine(const kPoint *points, size_t count, const kPen &pen);
+        void PolyBezier(const kPoint *points, size_t count, const kPen &pen);
 
         // quick draw calls of certain primitive types for closed outlines and fills
+        //      both kPen and kBrush objects are optional, if both are null - nothing is painted
         void Rectangle(const kRect &rect, const kPen *pen, const kBrush *brush);
         void RoundedRectangle(const kRect &rect, const kSize &round, const kPen *pen, const kBrush *brush);
         void Ellipse(const kRect &rect, const kPen *pen, const kBrush *brush);
@@ -536,23 +584,23 @@ namespace k_canvas
         void PolygonBezier(const kPoint *points, size_t count, const kPen *pen, const kBrush *brush);
 
         // object drawing
-        void DrawPath(const kPath *path, const kPen *pen, const kBrush *brush);
-        void DrawPath(const kPath *path, const kPen *pen, const kBrush *brush, const kPoint &offset);
-        void DrawPath(const kPath *path, const kPen *pen, const kBrush *brush, const kTransform &transform);
-        void DrawBitmap(const kBitmap *bitmap, const kPoint &origin, kScalar sourcealpha = 1.0f);
-        void DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kPoint &source, const kSize &size, kScalar sourcealpha = 1.0f);
-        void DrawBitmap(const kBitmap *bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha = 1.0f);
-        void DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin);
-        void DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin, const kPoint &source, const kSize &size);
-        void DrawMask(const kBitmap *mask, kBrush *brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize);
+        void DrawPath(const kPath &path, const kPen *pen, const kBrush *brush);
+        void DrawPath(const kPath &path, const kPen *pen, const kBrush *brush, const kPoint &offset);
+        void DrawPath(const kPath &path, const kPen *pen, const kBrush *brush, const kTransform &transform);
+        void DrawBitmap(const kBitmap &bitmap, const kPoint &origin, kScalar sourcealpha = 1.0f);
+        void DrawBitmap(const kBitmap &bitmap, const kPoint &origin, const kPoint &source, const kSize &size, kScalar sourcealpha = 1.0f);
+        void DrawBitmap(const kBitmap &bitmap, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize, kScalar sourcealpha = 1.0f);
+        void DrawMask(const kBitmap &mask, kBrush &brush, const kPoint &origin);
+        void DrawMask(const kBitmap &mask, kBrush &brush, const kPoint &origin, const kPoint &source, const kSize &size);
+        void DrawMask(const kBitmap &mask, kBrush &brush, const kPoint &origin, const kSize &destsize, const kPoint &source, const kSize &sourcesize);
 
         // simple text drawing 
-        void Text(const kPoint &p, const char *text, int count, const kFont *font, const kBrush *brush, kTextOrigin origin = kTextOrigin::Top);
-        void Text(const kRect &rect, const char *text, int count, const kFont *font, const kBrush *brush, const kTextOutProperties *properties = nullptr);
+        void Text(const kPoint &p, const char *text, int count, const kFont &font, const kBrush &brush, kTextOrigin origin = kTextOrigin::Top);
+        void Text(const kRect &rect, const char *text, int count, const kFont &font, const kBrush &brush, const kTextOutProperties *properties = nullptr);
 
         // masking & clipping
-        void BeginClippedDrawing(const kBitmap *mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp);
-        void BeginClippedDrawing(const kPath *clip, const kTransform &transform = kTransform());
+        void BeginClippedDrawing(const kBitmap &mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp);
+        void BeginClippedDrawing(const kPath &clip, const kTransform &transform = kTransform());
         void BeginClippedDrawing(const kRect &clip);
         void EndClippedDrawing();
 
@@ -574,6 +622,50 @@ namespace k_canvas
 
     protected:
         std::vector<kTransform> p_transform_stack;
+        kTransform              p_transform;
+    };
+
+
+    /*
+     -------------------------------------------------------------------------------
+     kCanvasClipper
+     -------------------------------------------------------------------------------
+        helper object for "safe" clipped drawing within {} block
+        automatically calls EndClippedDrawing when object goes out of scope
+    */
+    class kCanvasClipper
+    {
+    public:
+        kCanvasClipper(kCanvas &canvas, const kBitmap &mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp) :
+            p_canvas(canvas)
+        {
+            p_canvas.BeginClippedDrawing(mask, transform, xextend, yextend);
+        }
+
+        kCanvasClipper(kCanvas &canvas, const kPath &clip, const kTransform &transform = kTransform()) :
+            p_canvas(canvas)
+        {
+            p_canvas.BeginClippedDrawing(clip, transform);
+        }
+
+        kCanvasClipper(kCanvas &canvas, const kRect &clip) :
+            p_canvas(canvas)
+        {
+            p_canvas.BeginClippedDrawing(clip);
+        }
+
+        ~kCanvasClipper()
+        {
+            p_canvas.EndClippedDrawing();
+        }
+
+    private:
+        // this type of object can NOT be copied and reassigned to other
+        kCanvasClipper(const kCanvasClipper &source);
+        kCanvasClipper& operator=(const kCanvasClipper &source);
+
+    private:
+        kCanvas &p_canvas;
     };
 
 
@@ -586,8 +678,13 @@ namespace k_canvas
     class kBitmapCanvas : public kCanvas
     {
     public:
-        kBitmapCanvas(const kBitmap *target, const kRectInt *rect = nullptr);
+        kBitmapCanvas(const kBitmap &target, const kRectInt *rect = nullptr);
         ~kBitmapCanvas();
+
+    private:
+        // this type of object can NOT be copied and reassigned to other
+        kBitmapCanvas(const kBitmapCanvas &source);
+        kBitmapCanvas& operator=(const kBitmapCanvas &source);
     };
 
 
@@ -602,6 +699,11 @@ namespace k_canvas
     public:
         kContextCanvas(kContext context, const kRectInt *rect = nullptr);
         ~kContextCanvas();
+
+    private:
+        // this type of object can NOT be copied and reassigned to other
+        kContextCanvas(const kContextCanvas &source);
+        kContextCanvas& operator=(const kContextCanvas &source);
     };
 
 
@@ -616,6 +718,14 @@ namespace k_canvas
     public:
         kPrinterCanvas(kPrinter printer);
         ~kPrinterCanvas();
+
+    private:
+        // this type of object can NOT be copied and reassigned to other
+        kPrinterCanvas(const kPrinterCanvas &source);
+        kPrinterCanvas& operator=(const kPrinterCanvas &source);
     };
 
 } // namespace k_canvas
+
+#undef in
+#undef out

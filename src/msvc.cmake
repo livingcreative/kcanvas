@@ -3,27 +3,13 @@
 #
 #  Common 2D graphics API abstraction with multiple back-end support
 #
-#  (c) livingcreative, 2015
+#  (c) livingcreative, 2015 - 2016
 #
 #  https://github.com/livingcreative/kcanvas
 #
-#  windows.cmake
-#      cmake include file for Windows platform build
+#  msvc.cmake
+#      cmake include file for MSVC specific build
 #
-
-# windows platform build headers
-set(HEADERS
-	${HEADERS}
-	${INCLUDE_PATH}/win/platform.h
-	win/canvasimpld2d.h
-)
-
-# windows platform build sources
-set(SOURCES
-	${SOURCES}
-	win/platform.cpp
-	win/canvasimpld2d.cpp
-)
 
 # Visual Studio specific defines and options
 if (MSVC)
@@ -56,6 +42,23 @@ if (MSVC)
 	endif ()
 
 	# library output to "lib" directory
-	set(LIBRARY_OUT_PATH "${LIBRARY_OUT_PATH}/$(Platform)")
+	if (LIBRARY_OUT_PATH)
+		set(LIBRARY_OUT_PATH "${LIBRARY_OUT_PATH}/$(Platform)")
+
+		# this var is used to set PDB output path and name for kcanvas.lib
+		set(LIB_PDB_DIR ${LIBRARY_OUT_PATH})
+	endif ()
+
+	# link libraries path
+	if (LIBS_PATH)
+		set(LIBS_PATH "${LIBS_PATH}/$(Platform)/$(Configuration)")
+	endif ()
+
+	# link libraries names
+	if (LIBS)
+		foreach (LIB ${LIBS})
+			set(${LIB} ${LIB}.lib)
+		endforeach ()
+	endif ()
 
 endif (MSVC)
