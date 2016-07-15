@@ -3,7 +3,7 @@
 
     Common 2D graphics API abstraction with multiple back-end support
 
-    (c) livingcreative, 2015
+    (c) livingcreative, 2015 - 2016
 
     https://github.com/livingcreative/kcanvas
 
@@ -154,7 +154,6 @@ namespace k_canvas
             void FillAndStroke(const kPenBase *pen, const kBrushBase *brush);
             Clip& PushClip(bool save);
             void PopClip();
-            static void PrepareText(const char *source, size_t length, char *buffer);
 
         private:
             cairo_t           *boundContext;

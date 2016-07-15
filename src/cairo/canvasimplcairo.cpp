@@ -3,7 +3,7 @@
 
     Common 2D graphics API abstraction with multiple back-end support
 
-    (c) livingcreative, 2015
+    (c) livingcreative, 2015 - 2016
 
     https://github.com/livingcreative/kcanvas
 
@@ -12,6 +12,7 @@
 */
 
 #include "canvasimplcairo.h"
+#include <algorithm>
 
 
 using namespace c_util;
@@ -327,8 +328,10 @@ void kCanvasImplCairo::RoundedRectangle(const kRect &rect, const kSize &round, c
 
 void kCanvasImplCairo::Ellipse(const kRect &rect, const kPenBase *pen, const kBrushBase *brush)
 {
-    // TODO: this is bad behaviour
+    // TODO: this is bad behaviour, draw ellipse with curves
     cairo_scale(boundContext, 1, rect.height() / rect.width());
+
+    cairo_move_to(boundContext, rect.getCenter().x + rect.width() * 0.5f, rect.getCenter().y);
 
     cairo_arc(
         boundContext,
@@ -451,6 +454,7 @@ void kCanvasImplCairo::GetFontMetrics(const kFontBase *font, kFontMetrics &metri
     metrics.descent = kScalar(ext.descent);
     metrics.height = kScalar(ext.height);
     // TODO: additional font metrics
+    //       underline/strikethrough metrics must be set!
     metrics.linegap = 0;
     metrics.capheight = 0;
     metrics.xheight = 0;
@@ -463,17 +467,22 @@ void kCanvasImplCairo::GetFontMetrics(const kFontBase *font, kFontMetrics &metri
 void kCanvasImplCairo::GetGlyphMetrics(const kFontBase *font, size_t first, size_t last, kGlyphMetrics *metrics)
 {
     ApplyFont(font);
-    cairo_text_extents_t ext;
-    cairo_glyph_t glyphs[256];
-    for (size_t g = first; g <= last; ++g) {
-        glyphs[g - first].index = g;
-    }
-    cairo_glyph_extents(boundContext, glyphs, last - first + 1, &ext);
 
-    metrics->leftbearing = kScalar(ext.x_bearing);
-    metrics->advance = kScalar(ext.x_advance);
-    // TODO: right bearing
-    metrics->rightbearing = kScalar(ext.x_advance - ext.x_bearing);
+    while (first <= last) {
+        cairo_text_extents_t ext;
+
+        // TODO: this is actually not right,
+        //       check and refine glyph indices for all implementations
+        //       specify this in api reference
+        char glyph[2] = { first++, 0 };
+        cairo_text_extents(boundContext, glyph, &ext);
+
+        metrics->leftbearing = kScalar(ext.x_bearing);
+        metrics->advance = kScalar(ext.x_advance);
+        metrics->rightbearing = kScalar(ext.width + ext.x_bearing - ext.x_advance);
+
+        ++metrics;
+    }
 }
 
 kSize kCanvasImplCairo::TextSize(const char *text, size_t count, const kFontBase *font)
@@ -485,14 +494,13 @@ kSize kCanvasImplCairo::TextSize(const char *text, size_t count, const kFontBase
         boundContext = cairo_create(surface);
     }
 
-    // TODO: this is wrong, don't limit buffer
-    char buffer[4096];
-    PrepareText(text, count, buffer);
-
     ApplyFont(font);
 
+    string copy(text, text + count);
+    replace(copy.begin(), copy.end(), '\n', ' ');
+
     cairo_text_extents_t t_ext;
-    cairo_text_extents(boundContext, buffer, &t_ext);
+    cairo_text_extents(boundContext, copy.c_str(), &t_ext);
     cairo_font_extents_t f_ext;
     cairo_font_extents(boundContext, &f_ext);
 
@@ -507,18 +515,17 @@ kSize kCanvasImplCairo::TextSize(const char *text, size_t count, const kFontBase
 
 void kCanvasImplCairo::Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
 {
-    // TODO: this is wrong, don't limit buffer
-    char buffer[4096];
-    PrepareText(text, count, buffer);
-
     ApplyFont(font);
     ApplyBrush(brush);
 
     cairo_font_extents_t ext;
     cairo_font_extents(boundContext, &ext);
 
+    string copy(text, text + count);
+    replace(copy.begin(), copy.end(), '\n', ' ');
+
     cairo_move_to(boundContext, p.x, p.y + ext.ascent);
-    cairo_show_text(boundContext, buffer);
+    cairo_show_text(boundContext, copy.c_str());
 
     kFontStyle style = resourceData<FontData>(font).p_style;
     if (style & kFontStyle::Underline) {
@@ -750,19 +757,6 @@ void kCanvasImplCairo::PopClip()
     }
 }
 
-void kCanvasImplCairo::PrepareText(const char *source, size_t length, char *buffer)
-{
-    // TODO: unsafe copy, optimize length/copy
-    strncpy(buffer, source, length);
-    buffer[length] = 0;
-
-    while (*buffer) {
-        if (*buffer == '\n') {
-            *buffer = ' ';
-        }
-        ++buffer;
-    }
-}
 
 
 /*
@@ -792,23 +786,25 @@ void kCairoStroke::ApplyToContext(cairo_t *context, float width) const
         }
 
         case kStrokeStyle::Dash: {
-            double dots[2] = { width * 3, width };
+            double dots[2] = { width * 2, width * 2 };
             cairo_set_dash(context, dots, 2, p_data.p_dashoffset);
             break;
         }
 
         case kStrokeStyle::DashDot: {
-            double dots[4] = { width * 3, width, width, width };
+            double dots[4] = { width * 2, width, width, width };
             cairo_set_dash(context, dots, 4, p_data.p_dashoffset);
             break;
         }
 
         case kStrokeStyle::DashDotDot: {
-            double dots[6] = { width * 3, width, width, width, width, width };
+            double dots[6] = { width * 2, width, width, width, width, width };
             cairo_set_dash(context, dots, 6, p_data.p_dashoffset);
             break;
         }
     }
+
+    // TODO: does cairo support dash cap?
 
     cairo_set_line_cap(context, linecapstyles[size_t(p_data.p_startcap)]);
     cairo_set_line_join(context, joinstyles[size_t(p_data.p_join)]);
