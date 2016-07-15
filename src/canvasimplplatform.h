@@ -18,7 +18,6 @@
 #else
 
 #ifdef _WIN32
-#include "win/canvasimplgdiplus.h"
 #ifdef _MSC_VER
 #include "win/canvasimpld2d.h"
 #endif

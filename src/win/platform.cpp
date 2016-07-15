@@ -11,7 +11,6 @@
         canvas Windows platform implementations descriptors
 */
 
-#include "canvasimplgdiplus.h"
 #include "canvasimpld2d.h"
 
 namespace k_canvas
