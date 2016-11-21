@@ -31,7 +31,6 @@ set(HEADERS
 
 	# private source headers
 	canvasimpl.h
-	canvasimplplatform.h
 )
 
 set(SOURCES
@@ -46,6 +45,10 @@ if (WIN32)
 	include(win/windows.cmake)
 endif ()
 
+# Linux build
+if (LINUX)
+	include(cairo/linux.cmake)
+endif ()
 
 # MSVC specific build
 if (MSVC)
