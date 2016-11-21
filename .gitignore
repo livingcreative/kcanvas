@@ -2,3 +2,7 @@ build/vs2012/Release/
 build/vs2012/Debug/
 bin/
 lib/
+build/vs2015/
+build/vs2012/
+.vscode/
+doc/internal/
