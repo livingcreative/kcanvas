@@ -24,3 +24,5 @@ set(SOURCES
 	cairo/platform.cpp
 	cairo/canvasimplcairo.cpp
 )
+
+add_definitions(-D_CAIRO)
