@@ -14,12 +14,18 @@
 #pragma once
 #include "../canvasimpl.h"
 #include "cairo/cairo.h"
+#include <cstring>
 
 
 namespace k_canvas
 {
     namespace impl
     {
+        // forwards
+        class kCairoPen;
+        class kCairoBrush;
+        class kCairoFont;
+
         /*
          -------------------------------------------------------------------------------
          kGradientImplCairo

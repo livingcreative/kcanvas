@@ -13,8 +13,9 @@
 */
 
 #pragma once
-#include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <cmath>
 #include <cfloat>
 #include <limits>
 #include "kcommon/c_util.h"     // common utility funcs and types

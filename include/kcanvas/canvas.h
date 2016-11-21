@@ -18,7 +18,6 @@
 */
 
 #pragma once
-#include <cstddef>
 #include <vector>
 #include "canvastypes.h"     // all basic data types used by canvas and its objects
 #include "canvasresources.h" // internal resource object definitions

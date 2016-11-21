@@ -474,7 +474,7 @@ void kCanvasImplCairo::GetGlyphMetrics(const kFontBase *font, size_t first, size
         // TODO: this is actually not right,
         //       check and refine glyph indices for all implementations
         //       specify this in api reference
-        char glyph[2] = { first++, 0 };
+        char glyph[2] = { (char)(first++), 0 };
         cairo_text_extents(boundContext, glyph, &ext);
 
         metrics->leftbearing = kScalar(ext.x_bearing);
