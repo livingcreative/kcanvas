@@ -46,7 +46,7 @@ if (WIN32)
 endif ()
 
 # Linux build
-if (LINUX)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	include(cairo/linux.cmake)
 endif ()
 
