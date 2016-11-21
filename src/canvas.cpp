@@ -14,12 +14,26 @@
 
 #include "canvas.h"
 #include "canvasimpl.h"
+#include <cstring>
 
 
 using namespace k_canvas;
 using namespace impl;
 using namespace c_util;
 using namespace c_geometry;
+
+
+/*
+ -------------------------------------------------------------------------------
+ kSharedResourceBase object implementation
+ -------------------------------------------------------------------------------
+*/
+
+template <typename Tdata>
+kResourceObject* kSharedResourceBase<Tdata>::getResource(const Tdata &data) const
+{
+    return CanvasFactory::GetResource(data);
+}
 
 
 /*

@@ -15,6 +15,8 @@
 #pragma once
 #include <cmath>
 #include <cstdint>
+#include <cfloat>
+#include <limits>
 #include "kcommon/c_util.h"     // common utility funcs and types
 #include "kcommon/c_geometry.h" // common geometric functions and types
 #include "canvasplatform.h"     // implementation platform support

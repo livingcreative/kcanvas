@@ -52,6 +52,10 @@ if (MSVC)
 	include(msvc.cmake)
 endif ()
 
+# GCC specific build
+if (CMAKE_COMPILER_IS_GNUCXX)
+	include(gcc.cmake)
+endif ()
 
 # public include directories
 include_directories(${INCLUDE_PATH})

@@ -16,6 +16,7 @@
 #include "canvastypes.h"
 #include "canvasresources.h"
 #include <vector>
+#include <string>
 
 
 namespace k_canvas
@@ -249,132 +250,6 @@ namespace k_canvas
             static Impl           current_impl;
         };
 
-        /*
-        template <typename Tdata, typename Tallocator, typename Tres>
-        class ResourceManager
-        {
-        public:
-            ResourceManager();
-            ~ResourceManager();
-
-            Tres getResource(const Tdata &data);
-            void releaseResource(Tres resource);
-            void Clear();
-
-        private:
-            static inline size_t hash_int(size_t value)
-            {
-                value ^= (value >> 20) ^ (value >> 12);
-                return value ^ (value >> 7) ^ (value >> 4);
-            }
-
-            template <typename T> static inline size_t hash(T *data, size_t size)
-            {
-                size_t res = 0;
-                const uint8_t *p = reinterpret_cast<const uint8_t*>(data);
-                while (size > 4) {
-                    res += hash_int(*reinterpret_cast<const size_t*>(p));
-                    p += 4;
-                    size -= 4;
-                }
-                if (size) {
-                    size_t last = 0;
-                    uint8_t *p_last = reinterpret_cast<uint8_t*>(&last);
-                    while (size) {
-                        *p_last = *(p++);
-                        size--;
-                    }
-                    res += hash_int(last);
-                }
-
-                return res;
-            }
-
-            class h
-            {
-            public:
-                size_t operator()(const Tdata &data) const
-                {
-                    return hash(&data, sizeof(Tdata));
-                }
-
-                bool operator()(const Tdata &left, const Tdata &right) const
-                {
-                    return left < right;
-                }
-
-                static const size_t bucket_size = 32;
-            };
-
-            struct Resource
-            {
-                Tres  resource;
-                int   refcount;
-            };
-
-            typedef std::unordered_map<Tdata, Resource, h> Tcontainer;
-
-            Tcontainer p_resources;
-        };
-
-        template <typename Tdata, typename Tallocator, typename Tres>
-        ResourceManager<Tdata, Tallocator, Tres>::ResourceManager()
-        {}
-
-        template <typename Tdata, typename Tallocator, typename Tres>
-        ResourceManager<Tdata, Tallocator, Tres>::~ResourceManager()
-        {
-            // ENSURE CLEAR
-        }
-
-        template <typename Tdata, typename Tallocator, typename Tres>
-        Tres ResourceManager<Tdata, Tallocator, Tres>::getResource(const Tdata &data)
-        {
-            Tres result = nullptr;
-
-            typename Tcontainer::iterator it = p_resources.find(data);
-            if (it == p_resources.end()) {
-#ifdef _DEBUG
-                //dbg_resource_count++;
-#endif
-                result = Tallocator::createResource(data);
-                Resource res;
-                res.resource = result;
-                res.refcount = 1;
-                p_resources[data] = res;
-            } else {
-                result = it->second.resource;
-                Tallocator::adjustResource(result, data);
-                it->second.refcount++;
-            }
-
-            return result;
-        }
-
-        template <typename Tdata, typename Tallocator, typename Tres>
-        void ResourceManager<Tdata, Tallocator, Tres>::releaseResource(Tres resource)
-        {
-            //if (--resource.refcount == 0) {
-            //    //Tallocator::deleteResource(resource);
-            //}
-        }
-
-        template <typename Tdata, typename Tallocator, typename Tres>
-        void ResourceManager<Tdata, Tallocator, Tres>::Clear()
-        {
-            for (auto it = p_resources.begin(); it != p_resources.end(); it++) {
-                Tallocator::deleteResource(it->second.resource);
-#ifdef _DEBUG
-                //dbg_resource_count--;
-#endif
-            }
-            p_resources.clear();
-        }
-        */
-#ifdef _DEBUG
-        //extern int dbg_resource_count;
-#endif
-
 
         /*
          -------------------------------------------------------------------------------
@@ -387,11 +262,9 @@ namespace k_canvas
         public:\
             kResourceObject* getResource(const name##Data &data) override\
             {\
-                /*return (void*)name##_manager.getResource(data);*/\
                 return allocator::createResource(data);\
             }\
         private:\
-            //ResourceManager<name##Data, allocator, res> name##_manager;
 
 
         template <
@@ -417,10 +290,7 @@ namespace k_canvas
 
             void destroyResources() override
             {
-                // resource managers disabled for now
-                //Pen_manager.Clear();
-                //Brush_manager.Clear();
-                //Font_manager.Clear();
+                // TODO: implement resource management
             }
 
             FACTORY_RESOURCE_MANAGER(Stroke, Tstrokeallocator, Tstroke)
