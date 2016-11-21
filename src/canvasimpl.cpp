@@ -12,7 +12,6 @@
 */
 
 #include "canvasimpl.h"
-#include "canvasimplplatform.h"
 
 
 using namespace k_canvas;

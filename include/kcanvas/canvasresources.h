@@ -14,6 +14,7 @@
 
 #pragma once
 #include "canvastypes.h"
+#include <cstddef>
 
 
 namespace k_canvas
@@ -29,6 +30,7 @@ namespace k_canvas
         // Implementation forward declarations
         class kResourceObject;
         class kCanvasImpl;
+        class kPathImpl;
         class kGradientImpl;
         class kBitmapImpl;
 
@@ -217,12 +219,14 @@ namespace k_canvas
                 }
             }
 
+            kResourceObject* getResource(const Tdata &data) const;
+
             // createResource implementation should fill in all needed
             // native resources, so underlying implementation could quickly
             // access them
             kResourceObject* createResource() const
             {
-                kResourceObject *result = CanvasFactory::GetResource(p_data);
+                kResourceObject *result = getResource(p_data);
                 result->setupNativeResources(p_native);
                 return result;
             }
