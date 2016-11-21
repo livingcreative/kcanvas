@@ -671,6 +671,37 @@ namespace k_canvas
 
     /*
      -------------------------------------------------------------------------------
+     kCanvasTransformer
+     -------------------------------------------------------------------------------
+        helper object for "safe" tranformed drawing within {} block
+        automatically calls PopTransform when object goes out of scope
+    */
+    class kCanvasTransformer
+    {
+    public:
+        kCanvasTransformer(kCanvas &canvas, const kTransform &transform) :
+            p_canvas(canvas)
+        {
+            p_canvas.PushTransform(transform);
+        }
+
+        ~kCanvasTransformer()
+        {
+            p_canvas.PopTransform();
+        }
+
+    private:
+        // this type of object can NOT be copied and reassigned to other
+        kCanvasTransformer(const kCanvasTransformer &source);
+        kCanvasTransformer& operator=(const kCanvasTransformer &source);
+
+    private:
+        kCanvas &p_canvas;
+    };
+
+
+    /*
+     -------------------------------------------------------------------------------
      kBitmapCanvas
      -------------------------------------------------------------------------------
         canvas object for painting to kBitmap object
