@@ -6,8 +6,8 @@ Yet another 2D API abstraction
 
 ## What is it
 kcanvas is easy to use C++ API for rendering 2D graphics. Its main purpose is to make 2D graphics programming easier and hide nasty details of platform specific graphics APIs. It's crossplatform and has native implementation for supported platforms (Direct2D on windows, Quartz on Mac OS X, Cairo on Linux). It's suitable for rendering 2D graphics such as user interfaces, data visualization, diagrams and other text and visual content. It's not intended to be used in interactive games, however simple 2D game could be rendered with kcanvas API.
-> This project is under development now, so not all of its features are implemented and not all   
-> platforms are fully supported
+> This project is under development now, so not all of its features are implemented and   
+>  not all platforms are fully supported
 
 [Windows demo and examples binaries](https://raw.githubusercontent.com/wiki/livingcreative/kcanvas/data/kcanvasexamples_win.zip)
 
@@ -81,9 +81,9 @@ Please visit [examples wiki page](https://github.com/livingcreative/kcanvas/wiki
 
 ## How to build
 kcanvas library source comes with CMake project included.
-> Currently only windows build available
+> Currently only Windows and Linux builds available
 
-### Windows build
+### General build example
 You need [CMake](https://cmake.org) installed on your system to be able to generate Visual Studio solution to build kcanvas library.
 
 Create new directory where you want to download kcanvas library source. For this example let this directory be named `example`:
@@ -99,15 +99,20 @@ Clone **kcommon** repository, by default kcanvas depends on kcommon headers:
 ```
 git clone https://github.com/livingcreative/kcommon.git kcommon
 ```
-Now you can create directory for build (it can be located anywhere you like, for current example it'll be inside our `example` directory) and generate Visual Studio solution:
+Now you can create directory for build (it can be located anywhere you like, for current example it'll be inside our `example` directory) and generate project files for build (for Windows you'll get Visual Studio solution by default, for Linux you'll get makefile):
 ```
 mkdir build
 cd build
-cmake ..\kcanvas\src
+cmake ../kcanvas/src
 ```
-Now you can open `kcanvas.sln` solution file and build it with Visual Studio. Resulting library files (`kcanvas.lib`) will be put under `lib\<Platform>\<Configuration>` subdirectory inside `kcanvas` source directory.
+
+### Windows specifics
+After running cmake you can open `kcanvas.sln` solution file and build it with Visual Studio or msbuild. Resulting library files (`kcanvas.lib`) will be put under `lib\<Platform>\<Configuration>` subdirectory inside `kcanvas` source directory.
 
 By default kcanvas library builds with static MSVC runtime, to generate solution with dynamic MSVC runtime you can pass following option to cmake: `-Dmsvcruntime=dynamic`
+
+### Linux specifics
+After running cmake you can use generated makefile for building library. Resulting library files (`libkcanvas.a`) will be put under `lib` subdirectory inside `kcanvas` source directory.
 
 ## Copyright and licensing
 kcanvas 2D Graphics Library
