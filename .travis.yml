@@ -1,0 +1,8 @@
+language: cpp
+compiler: gcc
+
+script:
+	- cd ..
+	- git clone https://github.com/livingcreative/kcommon.git kcommon
+	- mkdir build && cd build
+	- cmake ../kcanvas/src --build
