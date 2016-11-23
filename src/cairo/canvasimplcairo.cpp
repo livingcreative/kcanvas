@@ -510,7 +510,7 @@ kSize kCanvasImplCairo::TextSize(const char *text, size_t count, const kFontBase
         boundContext = nullptr;
     }
 
-    return kSize(float(t_ext.width), float(f_ext.height));
+    return kSize(float(t_ext.x_advance), float(f_ext.height));
 }
 
 void kCanvasImplCairo::Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
