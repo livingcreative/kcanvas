@@ -58,9 +58,10 @@ Under the hood kcanvas API uses one of existing platform specific APIs, such as 
 Windows platform.
 
 ## How to use
-Having proper setup of your project for using kcanvas library (correct path to kcanvas include
-directory and kcanvas library linked into project) you only need to include `kcanvas/canvas.h`
-header in your source to get all kcanvas API stuff. To paint something you need to instantiate
+Having [proper setup](https://github.com/livingcreative/kcanvas/wiki/Guide#setting-up-project-to-use-kcanvas)
+of your project for using kcanvas library (correct path to kcanvas include directory and
+kcanvas library linked into project) you only need to include `kcanvas/canvas.h` header in
+your source to get all kcanvas API stuff. To paint something you need to instantiate
 `kContextCanvas` object and issue painting commands.
 
 Here is quick "Hello world" example:
