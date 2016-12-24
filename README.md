@@ -5,7 +5,12 @@ Yet another 2D API abstraction
 [![Build status](https://travis-ci.org/livingcreative/kcanvas.svg?branch=master)](https://travis-ci.org/livingcreative/kcanvas)
 
 ## What is it
-kcanvas is easy to use C++ API for rendering 2D graphics. Its main purpose is to make 2D graphics programming easier and hide nasty details of platform specific graphics APIs. It's crossplatform and has native implementation for supported platforms (Direct2D on windows, Quartz on Mac OS X, Cairo on Linux). It's suitable for rendering 2D graphics such as user interfaces, data visualization, diagrams and other text and visual content. It's not intended to be used in interactive games, however simple 2D game could be rendered with kcanvas API.
+kcanvas is easy to use C++ API for rendering 2D graphics. Its main purpose is to make 2D graphics
+programming easier and hide nasty details of platform specific graphics APIs. It's crossplatform
+and has native implementation for supported platforms (Direct2D on windows, Quartz on Mac OS X,
+Cairo on Linux). It's suitable for rendering 2D graphics such as user interfaces, data
+visualization, diagrams and other text and visual content. It's not intended to be used in
+interactive games, however simple 2D game could be rendered with kcanvas API.
 > This project is under development now, so not all of its features are implemented and   
 >  not all platforms are fully supported
 
@@ -27,9 +32,15 @@ kcanvas API is able to render 2D vector and raster graphics. You can stroke and 
 * Text measurement and rendering (with simple layouts)
 
 ## How it works
-In kcanvas API all of painting functions tied to `kCanvas` class. `kCanvas` object can't be instantiated directly, you need to use specific implementation to direct painting to specific device or `kBitmap` object. You can use `kContextCanvas` to paint into window and `kBitmapCanvas` to paint into `kBitmap` object.
+In kcanvas API all of painting functions tied to `kCanvas` class. `kCanvas` object can't be
+instantiated directly, you need to use specific implementation to direct painting to specific
+device or `kBitmap` object. You can use `kContextCanvas` to paint into window and
+`kBitmapCanvas` to paint into `kBitmap` object.
 
-Most of the properties for painting operation are taken from special resource objects, in general kcanvas API is stateless with few exceptions. Resource objects are immutable – once created their properties can't be changed. Some of resource objects can't be copied (`kBitmap` and `kGradient`) and always remains unique.
+Most of the properties for painting operation are taken from special resource objects, in general
+kcanvas API is stateless with few exceptions. Resource objects are immutable – once created their
+properties can't be changed. Some of resource objects can't be copied (`kBitmap` and
+`kGradient`) and always remains unique.
 * `kStroke` object holds properties for line style. It defines line pattern, line join style and line caps style.
 * `kGradient` object holds color gradient definition.
 * `kPen` object holds properties for stroke (outline painting) operations, it incapsulates `kStroke` and `kBrush` objects.
@@ -38,12 +49,19 @@ Most of the properties for painting operation are taken from special resource ob
 * `kPath` object holds geometric shape data.
 * `kBitmap` object holds raster image data.
 
-See [reference wiki page](https://github.com/livingcreative/kcanvas/wiki/Reference) for full kcanvas API types and classes reference.
+See [reference wiki page](https://github.com/livingcreative/kcanvas/wiki/Reference) for full
+kcanvas API types and classes reference.   
+See [guide wiki page](https://github.com/livingcreative/kcanvas/wiki/Guide) for general kcanvas
+concepts and usage.
 
-Under the hood kcanvas API uses one of existing platform specific APIs, such as Direct2D on Windows platform.
+Under the hood kcanvas API uses one of existing platform specific APIs, such as Direct2D on
+Windows platform.
 
 ## How to use
-Having proper setup of your project for using kcanvas library (correct path to kcanvas include directory and kcanvas library linked into project) you only need to include `kcanvas/canvas.h` header in your source to get all kcanvas API stuff. To paint something you need to instantiate `kContextCanvas` object and issue painting commands.
+Having proper setup of your project for using kcanvas library (correct path to kcanvas include
+directory and kcanvas library linked into project) you only need to include `kcanvas/canvas.h`
+header in your source to get all kcanvas API stuff. To paint something you need to instantiate
+`kContextCanvas` object and issue painting commands.
 
 Here is quick "Hello world" example:
 ```c++
@@ -77,42 +95,12 @@ canvas.Text(kPoint(20, 20), text, -1, font, black);
 Result:   
 ![kcanvas hello world](https://raw.githubusercontent.com/wiki/livingcreative/kcanvas/images/helloworld.jpg)
 
-Please visit [examples wiki page](https://github.com/livingcreative/kcanvas/wiki/Examples) for additional information and usage examples.
+Please visit [examples wiki page](https://github.com/livingcreative/kcanvas/wiki/Examples) for
+additional information and usage examples.
 
 ## How to build
-kcanvas library source comes with CMake project included.
-> Currently only Windows and Linux builds available
-
-### General build example
-You need [CMake](https://cmake.org) installed on your system to be able to generate Visual Studio solution to build kcanvas library.
-
-Create new directory where you want to download kcanvas library source. For this example let this directory be named `example`:
-```
-mkdir example
-cd example
-```
-Clone **kcanvas** repository:
-```
-git clone https://github.com/livingcreative/kcanvas.git kcanvas
-```
-Clone **kcommon** repository, by default kcanvas depends on kcommon headers:
-```
-git clone https://github.com/livingcreative/kcommon.git kcommon
-```
-Now you can create directory for build (it can be located anywhere you like, for current example it'll be inside our `example` directory) and generate project files for build (for Windows you'll get Visual Studio solution by default, for Linux you'll get makefile):
-```
-mkdir build
-cd build
-cmake ../kcanvas/src
-```
-
-### Windows specifics
-After running cmake you can open `kcanvas.sln` solution file and build it with Visual Studio or msbuild. Resulting library files (`kcanvas.lib`) will be put under `lib\<Platform>\<Configuration>` subdirectory inside `kcanvas` source directory.
-
-By default kcanvas library builds with static MSVC runtime, to generate solution with dynamic MSVC runtime you can pass following option to cmake: `-Dmsvcruntime=dynamic`
-
-### Linux specifics
-After running cmake you can use generated makefile for building library. Resulting library files (`libkcanvas.a`) will be put under `lib` subdirectory inside `kcanvas` source directory.
+Please visit [guide wiki page](https://github.com/livingcreative/kcanvas/wiki/Guide) for build
+instructions.
 
 ## Copyright and licensing
 kcanvas 2D Graphics Library
