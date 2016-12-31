@@ -756,7 +756,7 @@ static kSize TextLayout(
                 if (!usetabs) {
                     cp.x += spaceglyph.advance;
                 } else {
-                    while (tabwidth < cp.x) {
+                    while (tabwidth <= cp.x) {
                         tabwidth += defaulttabwidth;
                     }
                     cp.x = tabwidth;
