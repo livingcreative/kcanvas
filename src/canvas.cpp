@@ -42,6 +42,19 @@ kResourceObject* kSharedResourceBase<Tdata>::getResource(const Tdata &data) cons
  -------------------------------------------------------------------------------
 */
 
+// helper function to copy strokes data
+static void CopyStrokesData(StrokeData &data, const kScalar *strokes, size_t count)
+{
+    // TODO: handle strokes null case or invalid count cases
+    if (data.p_style != kStrokeStyle::Custom) {
+        // no custom stroke pattern accepted for styles other than Custom
+        data.p_count = 0;
+    } else {
+        data.p_count = umin(count, size_t(MAX_STROKES));
+        memcpy(data.p_stroke, strokes, data.p_count * sizeof(kScalar));
+    }
+}
+
 kStroke::kStroke(kStrokeStyle style, kScalar dashoffset, const kScalar *strokes, size_t count)
 {
     p_data.p_style = style;
@@ -50,7 +63,7 @@ kStroke::kStroke(kStrokeStyle style, kScalar dashoffset, const kScalar *strokes,
     p_data.p_dashcap = kCapStyle::Flat;
     p_data.p_dashoffset = dashoffset;
     p_data.p_join = kLineJoin::Miter;
-    p_data.p_count = 0;
+    CopyStrokesData(p_data, strokes, count);
 }
 
 kStroke::kStroke(
@@ -69,7 +82,7 @@ kStroke::kStroke(
     p_data.p_dashcap = dashcap;
     p_data.p_dashoffset = dashoffset;
     p_data.p_join = join;
-    p_data.p_count = 0;
+    CopyStrokesData(p_data, strokes, count);
 }
 
 kStroke::~kStroke()
@@ -140,6 +153,7 @@ kPen::kPen(const kColor color, kScalar width, kStrokeStyle style, const kScalar 
 
 kPen::kPen(const kColor color, kScalar width, const kStroke &stroke)
 {
+    // brush created implicitly
     kBrush brush(color);
 
     p_data.p_width = width;
@@ -515,6 +529,7 @@ void kBitmap::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, siz
     Breaks text into words and other elements
 */
 
+// defines word inside text by pointer to first char, length and type
 class Word
 {
 public:
@@ -532,9 +547,11 @@ public:
     Type        type;
 };
 
+// helps to split source text into words
 class WordBreaker
 {
 public:
+    // initialize word breaker with text, length and flags
     WordBreaker(const char *text, size_t length, kTextFlags flags) :
         p_text(reinterpret_cast<const unsigned char *>(text)),
         p_pos(0),
@@ -543,6 +560,7 @@ public:
         p_tabstops((flags & kTextFlags::UseTabs) != 0)
     {}
 
+    // extract next word from text
     bool NextWord(Word &word)
     {
         if (p_pos == p_length) {
@@ -675,6 +693,14 @@ void kTextService::GetGlyphMetrics(const kFont &font, size_t first, size_t last,
     p_impl->GetGlyphMetrics(&font, first, last, metrics);
 }
 
+// helper layout callback
+//      performs text to word split and layout of individual word blocks
+//      each layed out word passed to provided callback function
+//      text mesure functions use it to compute final text dimensions and metrics
+//      text painting functions use it to render text with computed position
+//
+// this is "common" flow layout, eventually it should be changed to klayout generic
+// algorithms
 template <typename T, typename C>
 static kSize TextLayout(
     kCanvasImpl *impl, const char *text, int count, const kFont *font,
@@ -682,6 +708,7 @@ static kSize TextLayout(
     kFontMetrics *fontmetrics = nullptr
 )
 {
+    // get basic space glyph and overall font metrics
     kGlyphMetrics spaceglyph;
     impl->GetGlyphMetrics(font, ' ', ' ', &spaceglyph);
 
@@ -690,6 +717,8 @@ static kSize TextLayout(
     if (fontmetrics) {
         *fontmetrics = fm;
     }
+
+    // fill in properties
 
     kTextFlags flags;
     kScalar    interval;
@@ -715,6 +744,8 @@ static kSize TextLayout(
     bool ignorelinebreaks = !multiline || (flags & kTextFlags::IgnoreLineBreaks) != 0;
     bool usetabs = (flags & kTextFlags::UseTabs) != 0;
     bool mergespaces = (flags & kTextFlags::MergeSpaces) != 0;
+
+    // perform layout
 
     WordBreaker wordbreaker(text, count, flags);
 
@@ -819,6 +850,8 @@ static kSize TextLayout(
     const char *text, size_t count,\
     kScalar width, bool newline
 
+// TextLayout function does all the bounds computation, so its actual layout output not
+// needed, this null callback just does nothing for reported words
 class NullLayoutCallback
 {
 public:
@@ -838,6 +871,7 @@ kSize kTextService::TextSize(const char *text, int count, const kFont &font, con
 
     font.needResource();
 
+    // perform computation with layout helper function
     NullLayoutCallback callback;
     kRect resultbounds;
     result = TextLayout(
@@ -1022,6 +1056,8 @@ void kCanvas::Text(const kPoint &p, const char *text, int count, const kFont &fo
     p_impl->Text(p, text, count, &font, &brush, origin);
 }
 
+// this callback class for TextLayout function actually renders provided word blocks
+// it's used when it's possible to render layout result as is
 class RenderLayoutCallback
 {
 public:
@@ -1047,7 +1083,7 @@ private:
     const kBrush *p_brush;
 };
 
-
+// struct for storing TextLayout output provided by callback function
 struct CachedWord
 {
     const char *text;
@@ -1059,6 +1095,10 @@ struct CachedWord
 
 typedef std::vector<CachedWord> CachedWordsList;
 
+// this callback class for TextLayout helper function stores layout results in a cache
+// before any actual output occurs
+// when additional alignment and adjustment work required for some of text render behaviors
+// it's being done on cached layout output
 class CacheLayoutCallback
 {
 public:
@@ -1099,6 +1139,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &
 
     kRect resultbounds;
 
+    // this condition indicates whether it's possible to directly draw layout result
     bool directoutput =
         properties == nullptr || (
             properties->horzalign == kTextHorizontalAlignment::Left &&
@@ -1107,12 +1148,16 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &
         );
 
     if (directoutput) {
+        // no additional computation after layout required - pass render callback to
+        // layout helper
         RenderLayoutCallback callback(rect.getLeftTop(), p_impl, &font, &brush);
         TextLayout(
             p_impl, text, count, &font, properties,
             rect.width(), callback, resultbounds
         );
     } else {
+        // additional computation required after layout, collect layout data into cache
+
         kFontMetrics fm;
 
         CachedWordsList cache;
@@ -1128,10 +1173,12 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &
             ellipses ? &fm : nullptr
         );
 
+        // compute bounds which will be used for text alignment
         kSize alignboundssize;
         alignboundssize.width = umax(size.width, rect.width());
         alignboundssize.height = umax(size.height, rect.height());
 
+        // compute overall vertical offset for vertical alignment
         kScalar verticaloffset = 0;
         switch (properties->vertalign) {
             case kTextVerticalAlignment::Middle:
@@ -1143,6 +1190,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &
                 break;
         }
 
+        // compute ellipses width, if required
         kScalar ellipseswidth = 0;
         if (ellipses) {
             kGlyphMetrics gm;
@@ -1150,6 +1198,8 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &
             ellipseswidth = gm.advance * 3;
         }
 
+        // walk through cached layout result and render text line by line
+        // with applying horizontal alignment and other options
         size_t cw = 0;
         size_t sz = cache.size();
         kScalar y = 0;
@@ -1160,8 +1210,12 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &
                 ++cw;
             }
 
+            // compute total width of current line of text
             kScalar width = cache[cw - 1].position.x + cache[cw - 1].width;
 
+            // compute horizontal alignment
+            // interwordspacing is used for additional spacing to add between words
+            // in order to get line fit whole text block width
             kScalar totaloffset = 0;
             kScalar interwordspacing = 0;
 
@@ -1186,6 +1240,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &
                     break;
             }
 
+            // compute current output position
             kPoint cp = rect.getLeftTop() + kPoint(totaloffset, verticaloffset);
 
             bool lasttextline = false;
@@ -1197,6 +1252,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &
                 lasttextline = nextrowbottom > rect.bottom;
             }
 
+            // output line words one by one
             bool stopoutput = false;
             for (size_t n = start; n < cw; ++n) {
                 const CachedWord &w = cache[n];
