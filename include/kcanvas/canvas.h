@@ -496,7 +496,7 @@ namespace k_canvas
      kTextService
      -------------------------------------------------------------------------------
         text service object
-        
+
         defines interface for retrieving font metrics and text measuring
 
         text measurement
@@ -582,9 +582,8 @@ namespace k_canvas
 
         clipping
             drawing can be clipped by any arbitrary shape or mask
-            BeginClippedDrawing command marks beginning of clipped drawing
-            EndClippedDrawing   command reverts back to previous clipping
-            clipping can be nested
+            use kCanvasClipper helper class with apropriate constructor to
+            setup painting with clipping
 
         transform
             canvas transform organized as a stack
@@ -594,6 +593,8 @@ namespace k_canvas
     */
     class kCanvas : public kTextService
     {
+        friend class kCanvasClipper;
+
     public:
         // quick draw calls of certain primitive types for non-closed outlines
         void Line(const kPoint &a, const kPoint &b, const kPen &pen);
@@ -625,12 +626,6 @@ namespace k_canvas
         void Text(const kPoint &p, const char *text, int count, const kFont &font, const kBrush &brush, kTextOrigin origin = kTextOrigin::Top);
         void Text(const kRect &rect, const char *text, int count, const kFont &font, const kBrush &brush, const kTextOutProperties *properties = nullptr);
 
-        // masking & clipping
-        void BeginClippedDrawing(const kBitmap &mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp);
-        void BeginClippedDrawing(const kPath &clip, const kTransform &transform = kTransform());
-        void BeginClippedDrawing(const kRect &clip);
-        void EndClippedDrawing();
-
         // transform
         void SetTransform(const kTransform &transform);
         void PushTransform(const kTransform &transform);
@@ -647,6 +642,14 @@ namespace k_canvas
 
         static inline void needResources(const kPen *pen, const kBrush *brush);
 
+        // masking & clipping
+        // now it's protected to make Canvas more stateless
+        // all clipping handling should be done through kCanvasClipper class
+        void BeginClippedDrawing(const kBitmap &mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp);
+        void BeginClippedDrawing(const kPath &clip, const kTransform &transform = kTransform());
+        void BeginClippedDrawing(const kRect &clip);
+        void EndClippedDrawing();
+
     protected:
         std::vector<kTransform> p_transform_stack;
         kTransform              p_transform;
@@ -658,25 +661,33 @@ namespace k_canvas
      kCanvasClipper
      -------------------------------------------------------------------------------
         helper object for "safe" clipped drawing within {} block
-        automatically calls EndClippedDrawing when object goes out of scope
+        clip state is valid while clipper object is alive,
+        when clipper object destructed (or goes out of scope) clipping state gets
+        restored back to the previous one
     */
     class kCanvasClipper
     {
     public:
+        // begin bitmap masked painting
         kCanvasClipper(kCanvas &canvas, const kBitmap &mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp) :
-            p_canvas(canvas)
+            p_canvas(canvas),
+            p_dummy(0)
         {
             p_canvas.BeginClippedDrawing(mask, transform, xextend, yextend);
         }
 
+        // begin path clipped painting
         kCanvasClipper(kCanvas &canvas, const kPath &clip, const kTransform &transform = kTransform()) :
-            p_canvas(canvas)
+            p_canvas(canvas),
+            p_dummy(0)
         {
             p_canvas.BeginClippedDrawing(clip, transform);
         }
 
+        // begin rectangle clipped painting
         kCanvasClipper(kCanvas &canvas, const kRect &clip) :
-            p_canvas(canvas)
+            p_canvas(canvas),
+            p_dummy(0)
         {
             p_canvas.BeginClippedDrawing(clip);
         }
@@ -686,6 +697,10 @@ namespace k_canvas
             p_canvas.EndClippedDrawing();
         }
 
+        // these two are for support "operator-like" clipper usage
+        operator bool() const { return p_dummy == 0; }
+        kCanvasClipper& operator++() { ++p_dummy; return *this; }
+
     private:
         // this type of object can NOT be copied and reassigned to other
         kCanvasClipper(const kCanvasClipper &source);
@@ -693,7 +708,19 @@ namespace k_canvas
 
     private:
         kCanvas &p_canvas;
+        int      p_dummy;
     };
+
+    // helper macro to write clipping in handy c# "using" operator style
+    // Example:
+    //      kclip(canvas, kRect(0, 0, 100, 100)) {
+    //          * clipped painting here *
+    //      }
+    //      * back to unclipped state *
+    // use KCANVAS_HELPER_MACRO definition to enable this macro
+    #ifdef KCANVAS_HELPER_MACRO
+    #define kclip(...) for (kCanvasClipper __clipper(__VA_ARGS__); __clipper; ++__clipper)
+    #endif // !KCANVAS_NO_HELPER_MACRO
 
 
     /*
