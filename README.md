@@ -31,6 +31,10 @@ kcanvas API is able to render 2D vector and raster graphics. You can stroke and 
 * Arbitrary transformation stack (via 3x2 matrix)
 * Text measurement and rendering (with simple layouts)
 
+**Ongoing development**   
+The [Roadmap wiki page](https://github.com/livingcreative/kcanvas/wiki/Roadmap) contains some 
+information about current project status and ongoing feature support and development plans.
+
 ## How it works
 In kcanvas API all of painting functions tied to `kCanvas` class. `kCanvas` object can't be
 instantiated directly, you need to use specific implementation to direct painting to specific
