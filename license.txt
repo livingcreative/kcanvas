@@ -1,6 +1,6 @@
 ﻿kcanvas 2D Graphics Library
 
-Copyright (C) 2015-2016, livingcreative (https://github.com/livingcreative)
+Copyright (C) 2015-2017, livingcreative (https://github.com/livingcreative)
 
 All rights reserved.
 

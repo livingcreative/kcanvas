@@ -3,7 +3,7 @@
 #
 #  Common 2D graphics API abstraction with multiple back-end support
 #
-#  (c) livingcreative, 2015 - 2016
+#  (c) livingcreative, 2015 - 2017
 #
 #  https://github.com/livingcreative/kcanvas
 #
