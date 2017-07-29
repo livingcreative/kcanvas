@@ -385,7 +385,8 @@ kPath::~kPath()
 
 kPath::Constructor kPath::Create()
 {
-    return Constructor();
+    Constructor result;
+    return result;
 }
 
 
