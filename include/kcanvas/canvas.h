@@ -316,11 +316,18 @@ namespace k_canvas
         geometric shape of any complexity and could be stroked or filled
         several times
 
-        after creation with default constructor path object remains in
-        construction state until Commit() command is called. In construction
-        state path construction commands can be issued for path definition. When
-        desired path is constructed one should issue Commit() command. After
-        commitment path object is transferred to ready state and can't be modified.
+        because path itself is immutable object it can not be instantiated
+        directly by constructing it with default constructor, instead special
+        helper Constructor class is used to build path. To construct new path
+        object Constructor helper object should be created first via Create() call.
+        Then path construction commands can be chained together to form a path and
+        upon finished Build() command should be called to return new path object
+
+        Example:
+            kPath path = kPath::Create()
+                .MoveTo(0, 0)
+                .LineTo(50, 50)
+                .Build();
 
         Path construction commands
             MoveTo(kPoint point)
@@ -363,43 +370,63 @@ namespace k_canvas
             Close
                 close current open figure
 
+            Build
+                finishe path construction and returns intermediate object to be
+                passed into kPath constructor (or assigned to declared kPath variable)
+
         Path object commands
             NOTE: this command is subject for removal
             Clear
                 reset all path data and transfers path object to construction state
 
-            Commit
-                finishe path construction and transfers path object to ready state
     */
     class kPath
     {
         friend class kCanvas;
 
+    private:
+        // Path constructor helper class
+        // in order for kPath object to remain immutable this helper object helps
+        // to build new path object
+        class Constructor
+        {
+        public:
+            Constructor();
+            Constructor(Constructor &source);
+            ~Constructor();
+
+            // current path construction interface
+            // these calls are used to build current path
+            Constructor& MoveTo(const kPoint &point);
+            Constructor& LineTo(const kPoint &point);
+            Constructor& BezierTo(const kPoint &p1, const kPoint &p2, const kPoint &p3);
+            Constructor& ArcTo(const kRect &rect, kScalar start, kScalar end);
+            Constructor& PolyLineTo(const kPoint *points, size_t count);
+            Constructor& PolyBezierTo(const kPoint *points, size_t count);
+            Constructor& Text(const char *text, int count, const kFont &font, kTextOrigin origin = kTextOrigin::Top);
+            Constructor& Close();
+
+            // path final construction
+            impl::kPathImpl* Build();
+
+        private:
+            impl::kPathImpl *p_impl; // path object implementation
+        };
+
+
     public:
-        // Empty path constructor, created path should be constructed
-        // with path construction commands and commited before use
-        kPath();
-        // Create transformed copy of a source path. Path created in
-        // commited state
+        // Create newly constructed path
+        kPath(impl::kPathImpl *result);
+        // Create transformed copy of a source path
         kPath(const kPath &source, const kTransform &transform);
         ~kPath();
 
-        // current path construction interface
-        // these calls are used to build current path
-        void MoveTo(const kPoint &point);
-        void LineTo(const kPoint &point);
-        void BezierTo(const kPoint &p1, const kPoint &p2, const kPoint &p3);
-        void ArcTo(const kRect &rect, kScalar start, kScalar end);
-        void PolyLineTo(const kPoint *points, size_t count);
-        void PolyBezierTo(const kPoint *points, size_t count);
-        void Text(const char *text, int count, const kFont &font, kTextOrigin origin = kTextOrigin::Top);
-        void Close();
-
-        // path clear & commit
-        void Clear();
-        void Commit();
+        // Return new path constructor helper
+        static Constructor Create();
 
     private:
+        // there's no sense to construct empty path
+        kPath();
         // this type of object can NOT be copied and reassigned to other
         kPath(const kPath &source);
         kPath& operator=(const kPath &source);

@@ -50,10 +50,10 @@ static void ClipByPathExample(kCanvas &canvas)
     kBrush brush(kColor(130, 218, 255));
     kFont font("Tahoma", 30, kFontStyle::Bold);
 
-    kPath textpath;
-    textpath.MoveTo(kPoint(10, 20));
-    textpath.Text("Text clip path", -1, font);
-    textpath.Commit();
+    kPath textpath = kPath::Create()
+        .MoveTo(kPoint(10, 20))
+        .Text("Text clip path", -1, font)
+        .Build();
 
     canvas.BeginClippedDrawing(textpath, kTransform::construct::translate(-15, 0));
 
