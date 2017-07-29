@@ -693,6 +693,26 @@ void kTextService::GetGlyphMetrics(const kFont &font, size_t first, size_t last,
     p_impl->GetGlyphMetrics(&font, first, last, metrics);
 }
 
+// helper function to count and measure word glyphs up until specified right edge from starting x position
+static size_t MeasureUntil(kCanvasImpl *impl, const kFont &font, const char *text, size_t count, kScalar x, kScalar right, kScalar &actualwidth)
+{
+    size_t result = 0;
+    kScalar startx = x;
+    for (; result < count; ++result) {
+        kGlyphMetrics gm;
+        size_t glyph = *text++;
+        impl->GetGlyphMetrics(&font, glyph, glyph, &gm);
+
+        if ((x + gm.advance) > right) {
+            break;
+        }
+
+        x += gm.advance;
+    }
+    actualwidth = x - startx;
+    return result;
+}
+
 // helper layout callback
 //      performs text to word split and layout of individual word blocks
 //      each layed out word passed to provided callback function
@@ -761,10 +781,21 @@ static kSize TextLayout(
     while (wordbreaker.NextWord(word)) {
         switch (word.type) {
             case Word::Text: {
+                // TODO
+                // here might be tricky situation when the word itself bigger than
+                // provided width to fit it in
+                // in this case word should be broken in subwords which fit required width
+                // propose an options for that or do it by default?
+                //      in case without doing long word break - words will fall outside
+                //      provided bounds
+
                 kScalar wordwidth = impl->TextSize(word.text, word.length, font).width;
+
+                // don't do line break if word doesn't fit and it's first word in a line
                 breaktonextline =
                     breaktonextline ||
-                    (multiline && (cp.x + wordwidth) > maxwidth);
+                    (multiline && cp.x > 0 && (cp.x + wordwidth) > maxwidth);
+
                 if (breaktonextline) {
                     cp.x = 0;
                     cp.y += fm.height + fm.linegap + interval;
@@ -772,7 +803,7 @@ static kSize TextLayout(
                 }
 
                 kGlyphMetrics gm;
-                // take word first glyph metrics
+                // take word's first glyph metrics for adjusting left bound
                 size_t glyph = word.text[0];
                 impl->GetGlyphMetrics(font, glyph, glyph, &gm);
 
@@ -780,6 +811,7 @@ static kSize TextLayout(
                     leftbound = cp.x + gm.leftbearing;
                 }
 
+                // take word's last glyph metrics for adjusting right bound
                 if (word.length > 1) {
                     glyph = word.text[word.length - 1];
                     impl->GetGlyphMetrics(font, glyph, glyph, &gm);
@@ -1283,26 +1315,17 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &
                         } else {
                             // measure word glyphs one by one while there's enough space
                             // to fit ellipses after word, then paint fitted glyphs of the word
-                            size_t c = 0;
-                            kScalar x = cp.x;
-                            for (; c < w.count; ++c) {
-                                kGlyphMetrics gm;
-                                size_t glyph = w.text[c];
-                                p_impl->GetGlyphMetrics(&font, glyph, glyph, &gm);
-
-                                if ((x + gm.advance) > (rect.right - ellipseswidth)) {
-                                    break;
-                                }
-
-                                x += gm.advance;
-                            }
+                            kScalar fitwidth;
+                            size_t c = MeasureUntil(p_impl, font, w.text, w.count, cp.x, rect.right - ellipseswidth, fitwidth);
 
                             p_impl->Text(cp, w.text, c, &font, &brush, kTextOrigin::Top);
-                            cp.x = x;
+                            cp.x += fitwidth;
                         }
 
                         p_impl->Text(cp, "...", 3, &font, &brush, kTextOrigin::Top);
 
+                        // TODO: currently first word out of bounds will stop text output
+                        // this seems to be layout issue, since it doesn't break long words
                         stopoutput = true;
                         break;
                     }
