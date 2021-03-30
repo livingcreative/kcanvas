@@ -22,6 +22,9 @@ using namespace impl;
 using namespace std;
 
 
+wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> g_convert;
+
+
 /*
  -------------------------------------------------------------------------------
  internal utility functions
@@ -270,10 +273,9 @@ void kPathImplD2D::Text(const char *text, int count, const kFontBase *font, kTex
         OpenSink();
     }
 
-    wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
     wstring t = count == -1 ?
-        convert.from_bytes(text) :
-        convert.from_bytes(text, text + count);
+        g_convert.from_bytes(text) :
+        g_convert.from_bytes(text, text + count);
 
     size_t length = t.length();
     size_t pos = 0;
@@ -802,8 +804,7 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
 
 kSize kCanvasImplD2D::TextSize(const char *text, size_t count, const kFontBase *font)
 {
-    wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-    wstring t = convert.from_bytes(text, text + count);
+    wstring t = g_convert.from_bytes(text, text + count);
 
     size_t length = t.length();
     size_t pos = 0;
@@ -837,8 +838,7 @@ kSize kCanvasImplD2D::TextSize(const char *text, size_t count, const kFontBase *
 
 void kCanvasImplD2D::Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
 {
-    wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-    wstring t = convert.from_bytes(text, text + count);
+    wstring t = g_convert.from_bytes(text, text + count);
 
     size_t length = t.length();
     size_t pos = 0;
@@ -1283,8 +1283,7 @@ kD2DBrush::~kD2DBrush()
 
 kD2DFont::kD2DFont(const FontData &font)
 {
-    wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
-    wstring t = convert.from_bytes(font.p_facename);
+    wstring t = g_convert.from_bytes(font.p_facename);
 
     IDWriteTextFormat *format = nullptr;
     P_DW->CreateTextFormat(
