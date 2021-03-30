@@ -22,7 +22,7 @@ using namespace impl;
 using namespace std;
 
 
-wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> g_convert;
+static wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> g_convert;
 
 
 /*
