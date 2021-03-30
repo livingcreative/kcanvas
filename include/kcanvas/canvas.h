@@ -136,7 +136,7 @@ namespace k_canvas
 
         // this type of object can be copied and reassigned to other
         kStroke(const kStroke &source);
-        kStroke& operator=(const kStroke &source);
+        kStroke &operator=(const kStroke &source);
     };
 
 
@@ -171,53 +171,15 @@ namespace k_canvas
         kGradient(const kGradientStop *stops, size_t count, kExtendType extend = kExtendType::Clamp);
         ~kGradient();
 
-    private:
         // this type of object can NOT be copied and reassigned to other
-        kGradient(const kGradient &source);
-        kGradient& operator=(const kGradient &source);
+        kGradient(const kGradient &source) = delete;
+        kGradient &operator=(const kGradient &source) = delete;
+
+        kGradient(kGradient &&source);
+        kGradient &operator=(kGradient &&source);
 
     protected:
         impl::kGradientImpl *p_impl; // gradient object implementation
-    };
-
-
-    /*
-     -------------------------------------------------------------------------------
-     kPen
-     -------------------------------------------------------------------------------
-        pen object
-
-        pen object completley defines stroke painting operation
-        it incapsulates kStroke and kBrush objects for stroke painting
-
-        these objects can be constructed independently or implicitly by kPen
-        constructor. Referenced objects can be safely deleted after pen
-        construction.
-
-        pen properties are:
-            kScalar width  - defines line width for stroke operation
-            kStroke stroke - reference to kStroke object which defines stroke style
-            kBrush  brush  - reference to kBrush object which defines stroke fill
-    */
-    class kPen : public impl::kPenBase
-    {
-    public:
-        // quick Clear pen creation
-        kPen();
-        // quick pen creation based on color, width and stroke style
-        //     implicitly creates solid style brush object with color provided
-        //     other stroke parameters set to default values (see kStroke default values)
-        kPen(const kColor color, kScalar width = 1, kStrokeStyle style = kStrokeStyle::Solid, const kScalar *strokes = nullptr, size_t count = 0);
-        // quick pen creation based on color and kStroke properties object
-        //     implicitly creates solid style brush object with color provided
-        kPen(const kColor color, kScalar width, const kStroke &stroke);
-        // general pen creation based on kBrush object and kStroke properties object
-        kPen(const kBrush &brush, kScalar width, const kStroke &stroke);
-        ~kPen();
-
-        // this type of object can be copied and reassigned to other
-        kPen(const kPen &source);
-        kPen& operator=(const kPen &source);
     };
 
 
@@ -273,7 +235,47 @@ namespace k_canvas
 
         // this type of object can be copied and reassigned to other
         kBrush(const kBrush &source);
-        kBrush& operator=(const kBrush &source);
+        kBrush &operator=(const kBrush &source);
+    };
+
+
+    /*
+     -------------------------------------------------------------------------------
+     kPen
+     -------------------------------------------------------------------------------
+        pen object
+
+        pen object completley defines stroke painting operation
+        it incapsulates kStroke and kBrush objects for stroke painting
+
+        these objects can be constructed independently or implicitly by kPen
+        constructor. Referenced objects can be safely deleted after pen
+        construction.
+
+        pen properties are:
+            kScalar width  - defines line width for stroke operation
+            kStroke stroke - reference to kStroke object which defines stroke style
+            kBrush  brush  - reference to kBrush object which defines stroke fill
+    */
+    class kPen : public impl::kPenBase
+    {
+    public:
+        // quick Clear pen creation
+        kPen();
+        // quick pen creation based on color, width and stroke style
+        //     implicitly creates solid style brush object with color provided
+        //     other stroke parameters set to default values (see kStroke default values)
+        kPen(const kColor color, kScalar width = 1, kStrokeStyle style = kStrokeStyle::Solid, const kScalar *strokes = nullptr, size_t count = 0);
+        // quick pen creation based on color and kStroke properties object
+        //     implicitly creates solid style brush object with color provided
+        kPen(const kColor color, kScalar width, const kStroke &stroke);
+        // general pen creation based on kBrush object and kStroke properties object
+        kPen(const kBrush &brush, kScalar width, const kStroke &stroke);
+        ~kPen();
+
+        // this type of object can be copied and reassigned to other
+        kPen(const kPen &source);
+        kPen &operator=(const kPen &source);
     };
 
 
@@ -302,7 +304,7 @@ namespace k_canvas
 
         // this type of object can be copied and reassigned to other
         kFont(const kFont &source);
-        kFont& operator=(const kFont &source);
+        kFont &operator=(const kFont &source);
     };
 
 
@@ -397,17 +399,17 @@ namespace k_canvas
 
             // current path construction interface
             // these calls are used to build current path
-            Constructor& MoveTo(const kPoint &point);
-            Constructor& LineTo(const kPoint &point);
-            Constructor& BezierTo(const kPoint &p1, const kPoint &p2, const kPoint &p3);
-            Constructor& ArcTo(const kRect &rect, kScalar start, kScalar end);
-            Constructor& PolyLineTo(const kPoint *points, size_t count);
-            Constructor& PolyBezierTo(const kPoint *points, size_t count);
-            Constructor& Text(const char *text, int count, const kFont &font, kTextOrigin origin = kTextOrigin::Top);
-            Constructor& Close();
+            Constructor &MoveTo(const kPoint &point);
+            Constructor &LineTo(const kPoint &point);
+            Constructor &BezierTo(const kPoint &p1, const kPoint &p2, const kPoint &p3);
+            Constructor &ArcTo(const kRect &rect, kScalar start, kScalar end);
+            Constructor &PolyLineTo(const kPoint *points, size_t count);
+            Constructor &PolyBezierTo(const kPoint *points, size_t count);
+            Constructor &Text(const char *text, int count, const kFont &font, kTextOrigin origin = kTextOrigin::Top);
+            Constructor &Close();
 
             // path final construction
-            impl::kPathImpl* Build();
+            impl::kPathImpl *Build();
 
         private:
             impl::kPathImpl *p_impl; // path object implementation
@@ -421,15 +423,15 @@ namespace k_canvas
         kPath(const kPath &source, const kTransform &transform);
         ~kPath();
 
+        // this type of object can NOT be copied and reassigned to other
+        kPath(const kPath &source) = delete;
+        kPath &operator=(const kPath &source) = delete;
+
+        kPath(kPath &&source);
+        kPath &operator=(kPath &&source);
+
         // Return new path constructor helper
         static Constructor Create();
-
-    private:
-        // there's no sense to construct empty path
-        kPath();
-        // this type of object can NOT be copied and reassigned to other
-        kPath(const kPath &source);
-        kPath& operator=(const kPath &source);
 
     protected:
         impl::kPathImpl *p_impl; // path object implementation
@@ -471,17 +473,19 @@ namespace k_canvas
         kBitmap(size_t width, size_t height, kBitmapFormat format);
         ~kBitmap();
 
+        // this type of object can NOT be copied and reassigned to other
+        kBitmap(const kBitmap &source) = delete;
+        kBitmap &operator=(const kBitmap &source) = delete;
+
+        kBitmap(kBitmap &&source);
+        kBitmap &operator=(kBitmap &&source);
+
         size_t width() const { return p_width; }
         size_t height() const { return p_height; }
         kSize size() const { return kSize(kScalar(p_width), kScalar(p_height)); }
         kBitmapFormat format() const { return p_format; }
 
         void Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, const void *data);
-
-    private:
-        // this type of object can NOT be copied and reassigned to other
-        kBitmap(const kBitmap &source);
-        kBitmap& operator=(const kBitmap &source);
 
     protected:
         impl::kBitmapImpl *p_impl;
@@ -509,17 +513,15 @@ namespace k_canvas
     {
     public:
         kTextService();
-        ~kTextService();
+        virtual ~kTextService();
+
+        kTextService(const kTextService &source) = delete;
+        kTextService &operator=(const kTextService &source) = delete;
 
         // simple text measuring and drawing 
         void GetFontMetrics(const kFont &font, out kFontMetrics &metrics);
         void GetGlyphMetrics(const kFont &font, size_t first, size_t last, out kGlyphMetrics *metrics);
         kSize TextSize(const char *text, int count, const kFont &font, const kTextSizeProperties *properties = nullptr, out kRect *bounds = nullptr);
-
-    private:
-        // this type of object can NOT be copied and reassigned to other
-        kTextService(const kTextService &source);
-        kTextService& operator=(const kTextService &source);
 
     protected:
         impl::kCanvasImpl *p_impl;
@@ -638,7 +640,7 @@ namespace k_canvas
     protected:
         // Default canvas instantiation is not allowed
         kCanvas() {}
-        ~kCanvas() {}
+        ~kCanvas() override {}
 
         static inline void needResources(const kPen *pen, const kBrush *brush);
 
@@ -697,14 +699,13 @@ namespace k_canvas
             p_canvas.EndClippedDrawing();
         }
 
+        // this type of object can NOT be copied and reassigned to other
+        kCanvasClipper(const kCanvasClipper &source) = delete;
+        kCanvasClipper &operator=(const kCanvasClipper &source) = delete;
+
         // these two are for support "operator-like" clipper usage
         operator bool() const { return p_dummy == 0; }
         kCanvasClipper& operator++() { ++p_dummy; return *this; }
-
-    private:
-        // this type of object can NOT be copied and reassigned to other
-        kCanvasClipper(const kCanvasClipper &source);
-        kCanvasClipper& operator=(const kCanvasClipper &source);
 
     private:
         kCanvas &p_canvas;
@@ -744,10 +745,9 @@ namespace k_canvas
             p_canvas.PopTransform();
         }
 
-    private:
         // this type of object can NOT be copied and reassigned to other
-        kCanvasTransformer(const kCanvasTransformer &source);
-        kCanvasTransformer& operator=(const kCanvasTransformer &source);
+        kCanvasTransformer(const kCanvasTransformer &source) = delete;
+        kCanvasTransformer &operator=(const kCanvasTransformer &source) = delete;
 
     private:
         kCanvas &p_canvas;
@@ -764,12 +764,11 @@ namespace k_canvas
     {
     public:
         kBitmapCanvas(const kBitmap &target, const kRectInt *rect = nullptr);
-        ~kBitmapCanvas();
+        ~kBitmapCanvas() override;
 
-    private:
         // this type of object can NOT be copied and reassigned to other
-        kBitmapCanvas(const kBitmapCanvas &source);
-        kBitmapCanvas& operator=(const kBitmapCanvas &source);
+        kBitmapCanvas(const kBitmapCanvas &source) = delete;
+        kBitmapCanvas &operator=(const kBitmapCanvas &source) = delete;
     };
 
 
@@ -783,12 +782,11 @@ namespace k_canvas
     {
     public:
         kContextCanvas(kContext context, const kRectInt *rect = nullptr);
-        ~kContextCanvas();
+        ~kContextCanvas() override;
 
-    private:
         // this type of object can NOT be copied and reassigned to other
-        kContextCanvas(const kContextCanvas &source);
-        kContextCanvas& operator=(const kContextCanvas &source);
+        kContextCanvas(const kContextCanvas &source) = delete;
+        kContextCanvas &operator=(const kContextCanvas &source) = delete;
     };
 
 
@@ -802,12 +800,11 @@ namespace k_canvas
     {
     public:
         kPrinterCanvas(kPrinter printer);
-        ~kPrinterCanvas();
+        ~kPrinterCanvas() override;
 
-    private:
         // this type of object can NOT be copied and reassigned to other
-        kPrinterCanvas(const kPrinterCanvas &source);
-        kPrinterCanvas& operator=(const kPrinterCanvas &source);
+        kPrinterCanvas(const kPrinterCanvas &source) = delete;
+        kPrinterCanvas &operator=(const kPrinterCanvas &source) = delete;
     };
 
 } // namespace k_canvas

@@ -200,7 +200,7 @@ kPen::kPen(const kPen &source) :
     }
 }
 
-kPen& kPen::operator=(const kPen &source)
+kPen &kPen::operator=(const kPen &source)
 {
     p_data.p_width = source.p_data.p_width;
 
@@ -282,7 +282,7 @@ kBrush::kBrush(const kBrush &source) :
     }
 }
 
-kBrush& kBrush::operator=(const kBrush &source)
+kBrush &kBrush::operator=(const kBrush &source)
 {
     p_data.p_style    = source.p_data.p_style;
     p_data.p_color    = source.p_data.p_color;
@@ -328,7 +328,7 @@ kFont::kFont(const kFont &source) :
     kFontBase(source)
 {}
 
-kFont& kFont::operator=(const kFont &source)
+kFont &kFont::operator=(const kFont &source)
 {
     p_data = source.p_data;
     AssignResource(source);
@@ -449,25 +449,25 @@ kPath::Constructor::~Constructor()
     ReleaseResource(p_impl);
 }
 
-kPath::Constructor& kPath::Constructor::MoveTo(const kPoint &point)
+kPath::Constructor &kPath::Constructor::MoveTo(const kPoint &point)
 {
     p_impl->MoveTo(point);
     return *this;
 }
 
-kPath::Constructor& kPath::Constructor::LineTo(const kPoint &point)
+kPath::Constructor &kPath::Constructor::LineTo(const kPoint &point)
 {
     p_impl->LineTo(point);
     return *this;
 }
 
-kPath::Constructor& kPath::Constructor::BezierTo(const kPoint &p1, const kPoint &p2, const kPoint &p3)
+kPath::Constructor &kPath::Constructor::BezierTo(const kPoint &p1, const kPoint &p2, const kPoint &p3)
 {
     p_impl->BezierTo(p1, p2, p3);
     return *this;
 }
 
-kPath::Constructor& kPath::Constructor::ArcTo(const kRect &rect, kScalar start, kScalar end)
+kPath::Constructor &kPath::Constructor::ArcTo(const kRect &rect, kScalar start, kScalar end)
 {
     // compute bezier segments' points
     kPoint arcpoints[MAX_ARC_POINTS];
@@ -490,32 +490,32 @@ kPath::Constructor& kPath::Constructor::ArcTo(const kRect &rect, kScalar start, 
     return *this;
 }
 
-kPath::Constructor& kPath::Constructor::PolyLineTo(const kPoint *points, size_t count)
+kPath::Constructor &kPath::Constructor::PolyLineTo(const kPoint *points, size_t count)
 {
     p_impl->PolyLineTo(points, count);
     return *this;
 }
 
-kPath::Constructor& kPath::Constructor::PolyBezierTo(const kPoint *points, size_t count)
+kPath::Constructor &kPath::Constructor::PolyBezierTo(const kPoint *points, size_t count)
 {
     p_impl->PolyBezierTo(points, count);
     return *this;
 }
 
-kPath::Constructor& kPath::Constructor::Text(const char *text, int count, const kFont &font, kTextOrigin origin)
+kPath::Constructor &kPath::Constructor::Text(const char *text, int count, const kFont &font, kTextOrigin origin)
 {
     font.needResource();
     p_impl->Text(text, count, &font, origin);
     return *this;
 }
 
-kPath::Constructor& kPath::Constructor::Close()
+kPath::Constructor &kPath::Constructor::Close()
 {
     p_impl->Close();
     return *this;
 }
 
-impl::kPathImpl* kPath::Constructor::Build()
+impl::kPathImpl *kPath::Constructor::Build()
 {
     auto result = p_impl;
     result->Commit();
