@@ -127,6 +127,21 @@ kGradient::~kGradient()
     ReleaseResource(p_impl);
 }
 
+kGradient::kGradient(kGradient &&source) :
+    p_impl(source.p_impl)
+{
+    source.p_impl = nullptr;
+}
+
+kGradient &kGradient::operator=(kGradient &&source)
+{
+    ReleaseResource(p_impl);
+    p_impl = source.p_impl;
+    source.p_impl = nullptr;
+
+    return *this;
+}
+
 
 /*
  -------------------------------------------------------------------------------
@@ -397,6 +412,21 @@ kPath::~kPath()
     ReleaseResource(p_impl);
 }
 
+kPath::kPath(kPath &&source) :
+    p_impl(source.p_impl)
+{
+    source.p_impl = nullptr;
+}
+
+kPath &kPath::operator=(kPath &&source)
+{
+    ReleaseResource(p_impl);
+    p_impl = source.p_impl;
+    source.p_impl = nullptr;
+
+    return *this;
+}
+
 kPath::Constructor kPath::Create()
 {
     Constructor result;
@@ -514,6 +544,31 @@ kBitmap::kBitmap(size_t width, size_t height, kBitmapFormat format) :
 kBitmap::~kBitmap()
 {
     ReleaseResource(p_impl);
+}
+
+kBitmap::kBitmap(kBitmap &&source) :
+    p_impl(source.p_impl),
+    p_width(source.p_width),
+    p_height(source.p_height),
+    p_format(source.p_format)
+{
+    source.p_impl = nullptr;
+    source.p_width = 0;
+    source.p_height = 0;
+}
+
+kBitmap &kBitmap::operator=(kBitmap &&source)
+{
+    p_impl = source.p_impl;
+    p_width = source.p_width;
+    p_height = source.p_height;
+    p_format = source.p_format;
+
+    source.p_impl = nullptr;
+    source.p_width = 0;
+    source.p_height = 0;
+
+    return *this;
 }
 
 void kBitmap::Update(const kRectInt *updaterect, kBitmapFormat sourceformat, size_t sourcepitch, const void *data)
