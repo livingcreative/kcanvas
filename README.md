@@ -53,8 +53,8 @@ properties can't be changed. Some of resource objects can't be copied (`kBitmap`
 * `kPath` object holds geometric shape data.
 * `kBitmap` object holds raster image data.
 
-See [reference wiki page](https://github.com/livingcreative/kcanvas/wiki/Reference) for full
-kcanvas API types and classes reference.   
+See reference wiki pages for full
+kcanvas API [types](https://github.com/livingcreative/kcanvas/wiki/Basic-Data-Types) and [classes](https://github.com/livingcreative/kcanvas/wiki/Public-API-Classes) reference.   
 See [guide wiki page](https://github.com/livingcreative/kcanvas/wiki/Guide) for general kcanvas
 concepts and usage.
 
