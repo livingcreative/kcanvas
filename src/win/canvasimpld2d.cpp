@@ -127,7 +127,7 @@ static const D2D1_LINE_JOIN joinstyles[3] = {
     D2D1_LINE_JOIN_ROUND
 };
 
-const D2D1_EXTEND_MODE extendmodes[2] = {
+static const D2D1_EXTEND_MODE extendmodes[2] = {
     D2D1_EXTEND_MODE_CLAMP,
     D2D1_EXTEND_MODE_WRAP
 };
@@ -440,7 +440,7 @@ void kBitmapImplD2D::Update(const kRectInt *updaterect, kBitmapFormat sourceform
     D2D1_SIZE_F size = p_bitmap->GetSize();
 
     kRectInt bitmaprect(0, 0, int(size.width), int(size.height));
-    kRectInt update = updaterect ? bitmaprect.intersectionwith(*updaterect) : bitmaprect;
+    kRectInt update(updaterect ? bitmaprect.intersectionwith(*updaterect) : bitmaprect);
 
     D2D1_RECT_U rect;
     rect.left = update.left;
@@ -481,7 +481,7 @@ bool kCanvasImplD2D::BindToBitmap(const kBitmapImpl *target, const kRectInt *rec
 
     D2D1_SIZE_U size = boundBitmap->GetPixelSize();
     kRectInt bitmaprect(0, 0, size.width, size.height);
-    renderRect = rect ? bitmaprect.intersectionwith(*rect) : bitmaprect;
+    renderRect = kRectInt(rect ? bitmaprect.intersectionwith(*rect) : bitmaprect);
 
     boundDC = CreateCompatibleDC(0);
 

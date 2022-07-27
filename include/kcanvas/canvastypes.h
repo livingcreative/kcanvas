@@ -35,7 +35,11 @@ namespace k_canvas
     typedef c_util::pointT<kScalar> kPoint;
     typedef c_util::sizeT<kScalar> kSize;
     typedef c_util::rectT<kScalar> kRect;
-    typedef c_util::rectT<int> kRectInt;
+
+    struct kRectInt : public c_util::rectT<int>
+    {
+        using c_util::rectT<int>::rectT;
+    };
 
     // basic types derived from c_geometry types
     typedef c_geometry::mat3x2<kScalar> kTransform;
@@ -92,6 +96,7 @@ namespace k_canvas
     {
         enum Style
         {
+            Normal        = 0,
             Bold          = 0x01,
             Italic        = 0x02,
             Underline     = 0x04,
@@ -453,6 +458,82 @@ namespace k_canvas
 
             return result;
         }
+    };
+
+
+    // forwards
+    class kCanvas;
+    class kBitmap;
+    class kPath;
+
+
+    /*
+     -------------------------------------------------------------------------------
+     kCanvasClipper
+     -------------------------------------------------------------------------------
+        helper object for "safe" clipped drawing within {} block
+        clip state is valid while clipper object is alive,
+        when clipper object destructed (or goes out of scope) clipping state gets
+        restored back to the previous one
+    */
+    class kCanvasClipper
+    {
+    public:
+        // begin bitmap masked painting
+        kCanvasClipper(kCanvas &canvas, const kBitmap &mask, const kTransform &transform = kTransform(), kExtendType xextend = kExtendType::Clamp, kExtendType yextend = kExtendType::Clamp);
+
+        // begin path clipped painting
+        kCanvasClipper(kCanvas &canvas, const kPath &clip, const kTransform &transform = kTransform());
+
+        // begin rectangle clipped painting
+        kCanvasClipper(kCanvas &canvas, const kRect &clip);
+
+        ~kCanvasClipper();
+
+        // this type of object can NOT be copied and reassigned to other
+        kCanvasClipper(const kCanvasClipper &source) = delete;
+        kCanvasClipper &operator=(const kCanvasClipper &source) = delete;
+
+        // these two are for support "operator-like" clipper usage
+        operator bool() const { return p_dummy == 0; }
+        kCanvasClipper& operator++() { ++p_dummy; return *this; }
+
+    private:
+        kCanvas &p_canvas;
+        int      p_dummy;
+    };
+
+    // helper macro to write clipping in handy c# "using" operator style
+    // Example:
+    //      kclip(canvas, kRect(0, 0, 100, 100)) {
+    //          * clipped painting here *
+    //      }
+    //      * back to unclipped state *
+    // use KCANVAS_HELPER_MACRO definition to enable this macro
+    #ifdef KCANVAS_HELPER_MACRO
+    #define kclip(...) for (kCanvasClipper __clipper(__VA_ARGS__); __clipper; ++__clipper)
+    #endif // !KCANVAS_NO_HELPER_MACRO
+
+
+    /*
+     -------------------------------------------------------------------------------
+     kCanvasTransformer
+     -------------------------------------------------------------------------------
+        helper object for "safe" tranformed drawing within {} block
+        automatically calls PopTransform when object goes out of scope
+    */
+    class kCanvasTransformer
+    {
+    public:
+        kCanvasTransformer(kCanvas &canvas, const kTransform &transform);
+        ~kCanvasTransformer();
+
+        // this type of object can NOT be copied and reassigned to other
+        kCanvasTransformer(const kCanvasTransformer &source) = delete;
+        kCanvasTransformer &operator=(const kCanvasTransformer &source) = delete;
+
+    private:
+        kCanvas &p_canvas;
     };
 
 

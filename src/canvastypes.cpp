@@ -12,6 +12,7 @@
 */
 
 #include "canvastypes.h"
+#include "canvas.h"
 
 using namespace k_canvas;
 
@@ -198,4 +199,45 @@ kColor kColor::fromHSL(kScalar hue, kScalar saturation, kScalar lightness)
         c_util::roundint(rgb[1] * 255.0f),
         c_util::roundint(rgb[2] * 255.0f)
     );
+}
+
+
+kCanvasClipper::kCanvasClipper(kCanvas &canvas, const kBitmap &mask, const kTransform &transform, kExtendType xextend, kExtendType yextend) :
+    p_canvas(canvas),
+    p_dummy(0)
+{
+    p_canvas.BeginClippedDrawing(mask, transform, xextend, yextend);
+}
+
+// begin path clipped painting
+kCanvasClipper::kCanvasClipper(kCanvas &canvas, const kPath &clip, const kTransform &transform) :
+    p_canvas(canvas),
+    p_dummy(0)
+{
+    p_canvas.BeginClippedDrawing(clip, transform);
+}
+
+// begin rectangle clipped painting
+kCanvasClipper::kCanvasClipper(kCanvas &canvas, const kRect &clip) :
+    p_canvas(canvas),
+    p_dummy(0)
+{
+    p_canvas.BeginClippedDrawing(clip);
+}
+
+kCanvasClipper::~kCanvasClipper()
+{
+    p_canvas.EndClippedDrawing();
+}
+
+
+kCanvasTransformer::kCanvasTransformer(kCanvas &canvas, const kTransform &transform) :
+    p_canvas(canvas)
+{
+    p_canvas.PushTransform(transform);
+}
+
+kCanvasTransformer::~kCanvasTransformer()
+{
+    p_canvas.PopTransform();
 }
