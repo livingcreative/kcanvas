@@ -138,8 +138,9 @@ static const D2D1_EXTEND_MODE extendmodes[2] = {
 // they should be changed to somewhat more reliable
 // TODO: getFactory() - is slow, think about speeding these methods
 #define P_RT static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_rt
-#define P_F static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_factory
+#define P_F  static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_factory
 #define P_DW static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_dwrite_factory
+#define P_FC static_cast<CanvasFactoryD2D*>(CanvasFactory::getFactory())->p_fontcollection
 
 #define pen_not_empty pen && native(pen)[kD2DPen::RESOURCE_STYLE]
 #define brush_not_empty brush && resourceData<BrushData>(brush).p_style != kBrushStyle::Clear
@@ -1283,11 +1284,16 @@ kD2DBrush::~kD2DBrush()
 
 kD2DFont::kD2DFont(const FontData &font)
 {
-    wstring t = g_convert.from_bytes(font.p_facename);
-
+    wstring facename;
+    if (font.p_facename[0] == 0) {
+        facename = L"System";
+    } else {
+        facename = g_convert.from_bytes(font.p_facename);
+    }
+    
     IDWriteTextFormat *format = nullptr;
     P_DW->CreateTextFormat(
-        t.c_str(), nullptr,
+        facename.c_str(), nullptr,
         font.p_style & kFontStyle::Bold ? DWRITE_FONT_WEIGHT_BOLD : DWRITE_FONT_WEIGHT_NORMAL,
         font.p_style & kFontStyle::Italic ? DWRITE_FONT_STYLE_ITALIC : DWRITE_FONT_STYLE_NORMAL,
         DWRITE_FONT_STRETCH_NORMAL,
@@ -1297,16 +1303,20 @@ kD2DFont::kD2DFont(const FontData &font)
         &format
     );
 
-    IDWriteFontCollection *c;
-    WCHAR n[256];
-    format->GetFontCollection(&c);
-    format->GetFontFamilyName(n, 256);
+    auto fontcollection = P_FC;
+
+    WCHAR fontfamilyname[256];
+    format->GetFontFamilyName(fontfamilyname, 256);
     UINT32 i;
     BOOL e;
-    c->FindFamilyName(n, &i, &e);
-    IDWriteFontFamily *ff;
-    c->GetFontFamily(i, &ff);
-    ff->GetFirstMatchingFont(
+    if (fontcollection->FindFamilyName(fontfamilyname, &i, &e) != S_OK) {
+        // in case something goes wrong use just 0 font family
+        i = 0;
+    }
+
+    IDWriteFontFamily *fontfamily;
+    fontcollection->GetFontFamily(i, &fontfamily);
+    fontfamily->GetFirstMatchingFont(
         format->GetFontWeight(), format->GetFontStretch(),
         format->GetFontStyle(), &p_font
     );
@@ -1314,6 +1324,7 @@ kD2DFont::kD2DFont(const FontData &font)
     p_font->CreateFontFace(&p_face);
 
     format->Release();
+    fontfamily->Release();
 }
 
 kD2DFont::~kD2DFont()
@@ -1409,7 +1420,8 @@ CanvasFactoryD2D::CanvasFactoryD2D() :
     p_dwrite_dll(0),
     p_factory(nullptr),
     p_dwrite_factory(nullptr),
-    p_rt(nullptr)
+    p_rt(nullptr),
+    p_fontcollection(nullptr)
 {
     p_d2d1_dll = LoadLibraryA("d2d1.dll");
     if (p_d2d1_dll == nullptr) {
@@ -1449,10 +1461,14 @@ CanvasFactoryD2D::CanvasFactoryD2D() :
         DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
         reinterpret_cast<IUnknown**>(&p_dwrite_factory)
     );
+    if (p_dwrite_factory) {
+        p_dwrite_factory->GetSystemFontCollection(&p_fontcollection);
+    }
 }
 
 CanvasFactoryD2D::~CanvasFactoryD2D()
 {
+    SafeRelease(p_fontcollection);
     SafeRelease(p_rt);
     SafeRelease(p_factory);
     SafeRelease(p_dwrite_factory);

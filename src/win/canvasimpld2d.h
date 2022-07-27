@@ -406,6 +406,7 @@ namespace k_canvas
             ID2D1Factory            *p_factory;
             IDWriteFactory          *p_dwrite_factory;
             ID2D1DCRenderTarget     *p_rt;
+            IDWriteFontCollection   *p_fontcollection;
 
             // TODO: implement handling of global transform
             //std::vector<kTransform>  p_global_transforms;
