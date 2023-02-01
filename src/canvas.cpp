@@ -160,7 +160,7 @@ kPen::kPen(const kColor color, kScalar width, kStrokeStyle style, const kScalar 
 {
     // stroke style and brush created implicitly
     kBrush brush(color);
-    kStroke stroke(style, 0, strokes, count);
+    kStroke stroke(style, (int(width) & 1) * .5f, strokes, count);
 
     p_data.p_width = width;
     p_data.p_stroke = stroke.getResource();
@@ -358,7 +358,7 @@ static void ArcToBezierPoints(const kRect &rect, kScalar start, kScalar end, kPo
     angle = abs(angle);
 
     mat m;
-    m.rotate(start);
+    m.rotate(-start);
 
     vec cur = m * vec(0, -radius);
 
