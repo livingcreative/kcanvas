@@ -293,7 +293,7 @@ void kPathImplD2D::Text(const char *text, int count, const kFontBase *font, kTex
             offsets[n].advanceOffset = p_cp.x;
             offsets[n].ascenderOffset = + originy - p_cp.y;
         }
-        _font_face->GetGlyphIndices(reinterpret_cast<UINT32*>(utf32text.data()), UINT32(curlen), indices);
+        _font_face->GetGlyphIndices(reinterpret_cast<const UINT32*>(utf32text.data()), UINT32(curlen), indices);
 
         _font_face->GetDesignGlyphMetrics(indices, UINT32(curlen), abc, FALSE);
         for (size_t n = 0; n < curlen; ++n) {
