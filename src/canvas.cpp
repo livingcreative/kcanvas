@@ -14,6 +14,7 @@
 
 #include "canvas.h"
 #include "canvasimpl.h"
+#include "unicodeconverter.h"
 #include <cstring>
 
 
@@ -859,7 +860,7 @@ static kSize TextLayout(
 
                 kGlyphMetrics gm;
                 // take word's first glyph metrics for adjusting left bound
-                size_t glyph = word.text[0];
+                size_t glyph = utf8codepoint(word.text);
                 impl->GetGlyphMetrics(font, glyph, glyph, &gm);
 
                 if ((cp.x + gm.leftbearing) < leftbound) {

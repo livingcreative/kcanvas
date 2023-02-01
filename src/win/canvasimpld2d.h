@@ -164,8 +164,8 @@ namespace k_canvas
             ID2D1PathGeometry* GeometryFromPoints(const kPoint *points, size_t count, bool closed);
             ID2D1PathGeometry* GeometryFromPointsBezier(const kPoint *points, size_t count, bool closed);
             static void GetGlyphRunMetrics(
-                const std::wstring &t, size_t pos, size_t curlen, const kFontBase *font,
-                DWRITE_GLYPH_METRICS *abc, UINT32 *codepoints, UINT16 *indices
+                const char32_t *codepoints, size_t curlen, const kFontBase *font,
+                DWRITE_GLYPH_METRICS *abc, UINT16 *indices
             );
 
         private:

@@ -12,17 +12,12 @@
 */
 
 #include "canvasimpld2d.h"
-#include <codecvt>
-#include <locale>
-
+#include "../unicodeconverter.h"
 
 using namespace c_util;
 using namespace k_canvas;
 using namespace impl;
 using namespace std;
-
-
-static wstring_convert<codecvt_utf8_utf16<wchar_t>, wchar_t> g_convert;
 
 
 /*
@@ -274,18 +269,15 @@ void kPathImplD2D::Text(const char *text, int count, const kFontBase *font, kTex
         OpenSink();
     }
 
-    wstring t = count == -1 ?
-        g_convert.from_bytes(text) :
-        g_convert.from_bytes(text, text + count);
+    auto utf32text = count == -1 ? utf8toutf32(text) : utf8toutf32(text, count);
 
-    size_t length = t.length();
-    size_t pos = 0;
+    auto length = utf32text.length();
+    auto pos = size_t(0);
 
     const size_t BUFFER_LEN = 256;
     UINT16 indices[BUFFER_LEN];
     DWRITE_GLYPH_METRICS abc[BUFFER_LEN];
     DWRITE_GLYPH_OFFSET offsets[BUFFER_LEN];
-    UINT32 codepoints[BUFFER_LEN];
 
     DWRITE_FONT_METRICS m;
     _font_face->GetMetrics(&m);
@@ -298,11 +290,10 @@ void kPathImplD2D::Text(const char *text, int count, const kFontBase *font, kTex
         size_t curlen = umin(length - pos, BUFFER_LEN);
 
         for (size_t n = 0; n < curlen; ++n) {
-            codepoints[n] = t[n + pos];
             offsets[n].advanceOffset = p_cp.x;
             offsets[n].ascenderOffset = + originy - p_cp.y;
         }
-        _font_face->GetGlyphIndices(codepoints, UINT32(curlen), indices);
+        _font_face->GetGlyphIndices(reinterpret_cast<UINT32*>(utf32text.data()), UINT32(curlen), indices);
 
         _font_face->GetDesignGlyphMetrics(indices, UINT32(curlen), abc, FALSE);
         for (size_t n = 0; n < curlen; ++n) {
@@ -812,10 +803,10 @@ void kCanvasImplD2D::GetGlyphMetrics(const kFontBase *font, size_t first, size_t
 
 kSize kCanvasImplD2D::TextSize(const char *text, size_t count, const kFontBase *font)
 {
-    wstring t = g_convert.from_bytes(text, text + count);
+    auto utf32text = utf8toutf32(text, count);
 
-    size_t length = t.length();
-    size_t pos = 0;
+    auto length = utf32text.length();
+    auto pos = size_t(0);
 
     kSize result;
 
@@ -827,13 +818,12 @@ kSize kCanvasImplD2D::TextSize(const char *text, size_t count, const kFontBase *
 
     const size_t BUFFER_LEN = 256;
     DWRITE_GLYPH_METRICS abc[BUFFER_LEN];
-    UINT32 codepoints[BUFFER_LEN];
     UINT16 indices[BUFFER_LEN];
 
     while (pos < length) {
         size_t curlen = umin(length - pos, BUFFER_LEN);
 
-        GetGlyphRunMetrics(t, pos, curlen, font, abc, codepoints, indices);
+        GetGlyphRunMetrics(utf32text.data() + pos, curlen, font, abc, indices);
         for (size_t n = 0; n < curlen; ++n) {
             result.width += abc[n].advanceWidth * k;
         }
@@ -846,15 +836,14 @@ kSize kCanvasImplD2D::TextSize(const char *text, size_t count, const kFontBase *
 
 void kCanvasImplD2D::Text(const kPoint &p, const char *text, size_t count, const kFontBase *font, const kBrushBase *brush, kTextOrigin origin)
 {
-    wstring t = g_convert.from_bytes(text, text + count);
+    auto utf32text = utf8toutf32(text, count);
 
-    size_t length = t.length();
-    size_t pos = 0;
+    auto length = utf32text.length();
+    auto pos = size_t(0);
 
     const size_t BUFFER_LEN = 256;
     UINT16 indices[BUFFER_LEN];
     DWRITE_GLYPH_METRICS abc[BUFFER_LEN];
-    UINT32 codepoints[BUFFER_LEN];
 
     DWRITE_GLYPH_RUN run;
     run.fontFace      = _font_face;
@@ -875,7 +864,7 @@ void kCanvasImplD2D::Text(const kPoint &p, const char *text, size_t count, const
         size_t curlen = umin(length - pos, BUFFER_LEN);
 
         // TODO: pass isSideways
-        GetGlyphRunMetrics(t, pos, curlen, font, abc, codepoints, indices);
+        GetGlyphRunMetrics(utf32text.data() + pos, curlen, font, abc, indices);
         FLOAT advance = 0;
         for (size_t n = 0; n < curlen; ++n) {
             advance += abc[n].advanceWidth * k;
@@ -1056,21 +1045,11 @@ ID2D1PathGeometry* kCanvasImplD2D::GeometryFromPointsBezier(const kPoint *points
 }
 
 void kCanvasImplD2D::GetGlyphRunMetrics(
-    const wstring &t, size_t pos, size_t curlen, const kFontBase *font,
-    DWRITE_GLYPH_METRICS *abc, UINT32 *codepoints, UINT16 *indices
+    const char32_t *codepoints, size_t curlen, const kFontBase *font,
+    DWRITE_GLYPH_METRICS *abc, UINT16 *indices
 )
 {
-    for (size_t n = 0; n < curlen; ++n) {
-        wchar_t ch = t[n + pos];
-        // TODO: think about this check, actually canvas class shouldn't pass
-        //       special characters to text functions
-        if (ch >= 0 && ch < ' ') {
-            ch = ' ';
-        }
-        codepoints[n] = ch;
-    }
-    _font_face->GetGlyphIndices(codepoints, UINT32(curlen), indices);
-
+    _font_face->GetGlyphIndices(reinterpret_cast<const UINT32*>(codepoints), UINT32(curlen), indices);
     _font_face->GetDesignGlyphMetrics(indices, UINT32(curlen), abc, FALSE);
 }
 
@@ -1291,13 +1270,9 @@ kD2DBrush::~kD2DBrush()
 
 kD2DFont::kD2DFont(const FontData &font)
 {
-    wstring facename;
-    if (font.p_facename[0] == 0) {
-        facename = L"System";
-    } else {
-        facename = g_convert.from_bytes(font.p_facename);
-    }
-    
+    wstring facename =
+        font.p_facename[0] == 0 ? L"System" : utf8toutf16(font.p_facename);
+
     IDWriteTextFormat *format = nullptr;
     P_DW->CreateTextFormat(
         facename.c_str(), nullptr,
