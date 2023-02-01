@@ -149,6 +149,8 @@ namespace k_canvas
         public:
             virtual ~kCanvasImpl();
 
+            virtual void Clear() = 0;
+
             virtual bool BindToBitmap(const kBitmapImpl *target, const kRectInt *rect) = 0;
             virtual bool BindToContext(kContext context, const kRectInt *rect) = 0;
             virtual bool BindToPrinter(kPrinter printer) = 0;

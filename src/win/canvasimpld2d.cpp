@@ -470,6 +470,11 @@ kCanvasImplD2D::~kCanvasImplD2D()
     Unbind();
 }
 
+void kCanvasImplD2D::Clear()
+{
+    P_RT->Clear();
+}
+
 bool kCanvasImplD2D::BindToBitmap(const kBitmapImpl *target, const kRectInt *rect)
 {
     if (boundDC) {

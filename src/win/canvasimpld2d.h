@@ -125,6 +125,8 @@ namespace k_canvas
             kCanvasImplD2D(const CanvasFactory *factory);
             ~kCanvasImplD2D() override;
 
+            void Clear() override;
+
             bool BindToBitmap(const kBitmapImpl *target, const kRectInt *rect) override;
             bool BindToContext(kContext context, const kRectInt *rect) override;
             bool BindToPrinter(kPrinter printer) override;

@@ -1011,6 +1011,11 @@ void kCanvas::needResources(const kPen *pen, const kBrush *brush)
     }
 }
 
+void kCanvas::Clear()
+{
+    p_impl->Clear();
+}
+
 void kCanvas::Line(const kPoint &a, const kPoint &b, const kPen &pen)
 {
     pen.needResource();

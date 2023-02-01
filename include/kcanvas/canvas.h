@@ -598,6 +598,9 @@ namespace k_canvas
         friend class kCanvasClipper;
 
     public:
+        // clear painting area to full black/transparent
+        void Clear();
+
         // quick draw calls of certain primitive types for non-closed outlines
         void Line(const kPoint &a, const kPoint &b, const kPen &pen);
         void Bezier(const kPoint &p1, const kPoint &p2, const kPoint &p3, const kPoint &p4, const kPen &pen);

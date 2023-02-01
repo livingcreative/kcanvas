@@ -112,6 +112,8 @@ namespace k_canvas
             kCanvasImplCairo(const CanvasFactory *factory);
             ~kCanvasImplCairo() override;
 
+            void Clear() override;
+
             bool BindToBitmap(const kBitmapImpl *target, const kRectInt *rect) override;
             bool BindToContext(kContext context, const kRectInt *rect) override;
             bool BindToPrinter(kPrinter printer) override;

@@ -154,6 +154,11 @@ kCanvasImplCairo::~kCanvasImplCairo()
     Unbind();
 }
 
+void kCanvasImplCairo::Clear()
+{
+    // TODO: implement clear
+}
+
 bool kCanvasImplCairo::BindToBitmap(const kBitmapImpl *target, const kRectInt *rect)
 {
     if (boundContext) {
