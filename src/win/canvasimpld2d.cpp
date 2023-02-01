@@ -557,8 +557,6 @@ bool kCanvasImplD2D::BindToContext(kContext context, const kRectInt *rect)
     P_RT->BindDC(boundDC, &rc);
     P_RT->BeginDraw();
 
-    P_RT->Clear();
-
     origin.translate(kScalar(-rc.left), kScalar(-rc.top));
     P_RT->SetTransform(t2t(origin));
 
