@@ -13,23 +13,33 @@ namespace k_canvas
     {
         static inline char32_t utf8_codepoint(const char *&utf8)
         {
+            // check single byte 7-bit ASCII code and return it as a codepoint
             if ((*utf8 & 0x80) == 0) {
                 return char32_t(unsigned char(*utf8++));
             }
 
-            auto bytecount = 1u;
-            auto mask = 0xc0u;
-            while ((*utf8 & (0x80 >> bytecount)) != 0) {
-                ++bytecount;
-                mask = (mask >> 1) | 0x80;
-            }
-            mask &= ~(0x80 >> bytecount);
-            mask = mask ^ 0xff;
+            // here should be at least two byte codepoint
+            auto bytecount = 2u;
 
+            // count bytes
+            auto mask = 0x20u;
+            while ((*utf8 & mask) != 0) {
+                ++bytecount;
+                mask = mask >> 1;
+            }
+
+            // set first byte code mask
+            mask = 0xffffff80 >> bytecount;
+            mask = mask ^ 0xffffffff;
+
+            // calc code shift
             auto shift = (bytecount - 1) * 6;
+
+            // read first byte code bits
             auto codepoint = (*utf8++ & mask) << shift;
 
-            while ((*utf8 & 0x80) != 0) {
+            // read rest bytes code bits
+            while (--bytecount > 0) {
                 shift -= 6;
                 codepoint |= ((*utf8++) & 0x7f) << shift;
             }
