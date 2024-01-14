@@ -2,7 +2,6 @@
 Yet another 2D API abstraction  
 
 [![Build status](https://ci.appveyor.com/api/projects/status/x8slen7egsu31ynm?svg=true)](https://ci.appveyor.com/project/livingcreative/kcanvas)
-[![Build status](https://travis-ci.org/livingcreative/kcanvas.svg?branch=master)](https://travis-ci.org/livingcreative/kcanvas)
 
 ## What is it
 kcanvas is easy to use C++ API for rendering 2D graphics. Its main purpose is to make 2D graphics
