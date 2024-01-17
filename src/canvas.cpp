@@ -1263,7 +1263,7 @@ void kCanvas::Text(const kRect &rect, const char *text, int count, const kFont &
         kSize size = TextLayout(
             p_impl, text, count, &font, properties,
             rect.width(), callback, resultbounds,
-            ellipses ? &fm : nullptr
+            &fm
         );
 
         // compute bounds which will be used for text alignment
